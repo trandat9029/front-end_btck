@@ -2,6 +2,7 @@
 
 import { AxiosError } from 'axios';
 import { useCallback, useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { DEFAULT_LIMIT, DEFAULT_SORTS } from '@/constants/employee';
 import { departmentApi } from '@/lib/api/department';
 import { employeeApi } from '@/lib/api/employee';
@@ -16,7 +17,7 @@ import {
   SortOrder,
 } from '@/types/employee';
 
-type fetchEmployeesParams = {
+type FetchEmployeesParams = {
   employeeName: string;
   departmentId: string;
   page?: number;
@@ -26,10 +27,34 @@ type fetchEmployeesParams = {
   ordEndDate?: SortOrder;
 };
 
-/**
- * Hook quản lý state và nghiệp vụ cho màn hình ADM002.
- */
+type SearchState = {
+  employeeName: string;
+  departmentId: string;
+  page: number;
+  ordEmployeeName: SortOrder;
+  ordCertificationName: SortOrder;
+  ordEndDate: SortOrder;
+};
+
+const parsePositiveInteger = (value: string | null, fallback: number) => {
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+    return fallback;
+  }
+
+  return parsedValue;
+};
+
+const parseSortOrder = (value: string | null, fallback: SortOrder): SortOrder => {
+  return value === 'asc' || value === 'desc' ? value : fallback;
+};
+
 export const useADM002 = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -48,9 +73,44 @@ export const useADM002 = () => {
   );
   const [endDateSort, setEndDateSort] = useState<SortOrder>(DEFAULT_SORTS.ordEndDate);
 
-  /**
-   * Tải danh sách nhân viên theo điều kiện tìm kiếm, sắp xếp và phân trang.
-   */
+  const buildSearchStateQuery = useCallback((state: SearchState) => {
+    const params = new URLSearchParams();
+
+    if (state.employeeName.trim()) {
+      params.set('employee_name', state.employeeName.trim());
+    }
+
+    if (state.departmentId) {
+      params.set('department_id', state.departmentId);
+    }
+
+    if (state.page > 1) {
+      params.set('page', String(state.page));
+    }
+
+    if (state.ordEmployeeName !== DEFAULT_SORTS.ordEmployeeName) {
+      params.set('ord_employee_name', state.ordEmployeeName);
+    }
+
+    if (state.ordCertificationName !== DEFAULT_SORTS.ordCertificationName) {
+      params.set('ord_certification_name', state.ordCertificationName);
+    }
+
+    if (state.ordEndDate !== DEFAULT_SORTS.ordEndDate) {
+      params.set('ord_end_date', state.ordEndDate);
+    }
+
+    return params.toString();
+  }, []);
+
+  const replaceSearchState = useCallback(
+    (state: SearchState) => {
+      const queryString = buildSearchStateQuery(state);
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname);
+    },
+    [buildSearchStateQuery, pathname, router]
+  );
+
   const fetchEmployees = useCallback(
     async ({
       employeeName: nextEmployeeName,
@@ -60,7 +120,7 @@ export const useADM002 = () => {
       ordEmployeeName = DEFAULT_SORTS.ordEmployeeName,
       ordCertificationName = DEFAULT_SORTS.ordCertificationName,
       ordEndDate = DEFAULT_SORTS.ordEndDate,
-    }: fetchEmployeesParams) => {
+    }: FetchEmployeesParams) => {
       setIsLoading(true);
       setErrorMessage('');
 
@@ -98,9 +158,6 @@ export const useADM002 = () => {
     []
   );
 
-  /**
-   * Tải danh sách phòng ban để hiển thị dropdown nhóm trên ADM002.
-   */
   const fetchDepartments = useCallback(async () => {
     try {
       const response = await departmentApi.getDepartments();
@@ -119,29 +176,45 @@ export const useADM002 = () => {
     }
   }, []);
 
-  /**
-   * Khởi tạo dữ liệu ban đầu cho ADM002: tải danh sách phòng ban và danh sách nhân viên ở trạng thái tìm kiếm mặc định.
-   */
   useEffect(() => {
-    void fetchDepartments();
-    void fetchEmployees({
-      employeeName: '',
-      departmentId: '',
-      page: 1,
-      ordEmployeeName: DEFAULT_SORTS.ordEmployeeName,
-      ordCertificationName: DEFAULT_SORTS.ordCertificationName,
-      ordEndDate: DEFAULT_SORTS.ordEndDate,
-    });
-  }, [fetchDepartments, fetchEmployees]);
+    const initialState: SearchState = {
+      employeeName: searchParams.get('employee_name') ?? '',
+      departmentId: searchParams.get('department_id') ?? '',
+      page: parsePositiveInteger(searchParams.get('page'), 1),
+      ordEmployeeName: parseSortOrder(
+        searchParams.get('ord_employee_name'),
+        DEFAULT_SORTS.ordEmployeeName
+      ),
+      ordCertificationName: parseSortOrder(
+        searchParams.get('ord_certification_name'),
+        DEFAULT_SORTS.ordCertificationName
+      ),
+      ordEndDate: parseSortOrder(
+        searchParams.get('ord_end_date'),
+        DEFAULT_SORTS.ordEndDate
+      ),
+    };
 
-  /**
-   * Tính tổng số trang từ tổng số bản ghi hiện tại.
-   */
+    void fetchDepartments();
+    setEmployeeName(initialState.employeeName);
+    setDepartmentId(initialState.departmentId);
+    setCurrentPage(initialState.page);
+    setEmployeeNameSort(initialState.ordEmployeeName);
+    setCertificationSort(initialState.ordCertificationName);
+    setEndDateSort(initialState.ordEndDate);
+
+    void fetchEmployees({
+      employeeName: initialState.employeeName,
+      departmentId: initialState.departmentId,
+      page: initialState.page,
+      ordEmployeeName: initialState.ordEmployeeName,
+      ordCertificationName: initialState.ordCertificationName,
+      ordEndDate: initialState.ordEndDate,
+    });
+  }, [fetchDepartments, fetchEmployees, searchParams]);
+
   const totalPages = Math.max(1, Math.ceil(totalRecords / DEFAULT_LIMIT));
 
-  /**
-   * Sinh dãy số trang cần hiển thị trên thanh phân trang.
-   */
   const visiblePages = (() => {
     if (totalPages <= 5) {
       return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -158,9 +231,6 @@ export const useADM002 = () => {
     return [1, currentPage - 1, currentPage, currentPage + 1, totalPages];
   })();
 
-  /**
-   * Chuẩn hóa và validate tên nhân viên khi người dùng thay đổi input tìm kiếm.
-   */
   const handleEmployeeNameChange = (value: string) => {
     const nextValue = sanitizeEmployeeNameInput(value);
 
@@ -168,9 +238,6 @@ export const useADM002 = () => {
     setEmployeeNameErrorMessage(validateEmployeeName(nextValue));
   };
 
-  /**
-   * Validate điều kiện tìm kiếm rồi tải lại danh sách nhân viên từ trang đầu tiên.
-   */
   const handleSearch = async (nextEmployeeName = employeeName) => {
     const validationMessage = validateEmployeeName(nextEmployeeName);
 
@@ -179,47 +246,61 @@ export const useADM002 = () => {
       return false;
     }
 
-    setCurrentPage(1);
-    setEmployeeName(nextEmployeeName);
-    setEmployeeNameErrorMessage('');
-
-    await fetchEmployees({
+    const nextState: SearchState = {
       employeeName: nextEmployeeName,
       departmentId,
       page: 1,
       ordEmployeeName: employeeNameSort,
       ordCertificationName: certificationSort,
       ordEndDate: endDateSort,
+    };
+
+    setCurrentPage(1);
+    setEmployeeName(nextEmployeeName);
+    setEmployeeNameErrorMessage('');
+    replaceSearchState(nextState);
+
+    await fetchEmployees({
+      employeeName: nextState.employeeName,
+      departmentId: nextState.departmentId,
+      page: nextState.page,
+      ordEmployeeName: nextState.ordEmployeeName,
+      ordCertificationName: nextState.ordCertificationName,
+      ordEndDate: nextState.ordEndDate,
     });
 
     return true;
   };
 
-  /**
-   * Chuyển trang hiện tại và tải dữ liệu tương ứng với trang được chọn.
-   */
   const handlePageChange = async (page: number) => {
-    const totalPages = Math.max(1, Math.ceil(totalRecords / DEFAULT_LIMIT));
+    const maxPage = Math.max(1, Math.ceil(totalRecords / DEFAULT_LIMIT));
 
-    if (page < 1 || page > totalPages || page === currentPage || isLoading) {
+    if (page < 1 || page > maxPage || page === currentPage || isLoading) {
       return;
     }
 
-    setCurrentPage(page);
-
-    await fetchEmployees({
+    const nextState: SearchState = {
       employeeName,
       departmentId,
       page,
       ordEmployeeName: employeeNameSort,
       ordCertificationName: certificationSort,
       ordEndDate: endDateSort,
+    };
+
+    setCurrentPage(page);
+    replaceSearchState(nextState);
+
+    await fetchEmployees({
+      employeeName: nextState.employeeName,
+      departmentId: nextState.departmentId,
+      page: nextState.page,
+      ordEmployeeName: nextState.ordEmployeeName,
+      ordCertificationName: nextState.ordCertificationName,
+      ordEndDate: nextState.ordEndDate,
     });
   };
 
-  /**
-   * Đảo chiều sort của cột được chọn rồi tải lại danh sách nhân viên.
-   */
   const handleSortChange = async (
     sortKey: 'employeeName' | 'certification' | 'endDate'
   ) => {
@@ -242,18 +323,28 @@ export const useADM002 = () => {
           : 'asc'
         : endDateSort;
 
-    setEmployeeNameSort(nextEmployeeNameSort);
-    setCertificationSort(nextCertificationSort);
-    setEndDateSort(nextEndDateSort);
-    setCurrentPage(1);
-
-    await fetchEmployees({
+    const nextState: SearchState = {
       employeeName,
       departmentId,
       page: 1,
       ordEmployeeName: nextEmployeeNameSort,
       ordCertificationName: nextCertificationSort,
       ordEndDate: nextEndDateSort,
+    };
+
+    setEmployeeNameSort(nextEmployeeNameSort);
+    setCertificationSort(nextCertificationSort);
+    setEndDateSort(nextEndDateSort);
+    setCurrentPage(1);
+    replaceSearchState(nextState);
+
+    await fetchEmployees({
+      employeeName: nextState.employeeName,
+      departmentId: nextState.departmentId,
+      page: nextState.page,
+      ordEmployeeName: nextState.ordEmployeeName,
+      ordCertificationName: nextState.ordCertificationName,
+      ordEndDate: nextState.ordEndDate,
     });
   };
 
@@ -274,6 +365,14 @@ export const useADM002 = () => {
     employeeNameSort,
     certificationSort,
     endDateSort,
+    searchStateQuery: buildSearchStateQuery({
+      employeeName,
+      departmentId,
+      page: currentPage,
+      ordEmployeeName: employeeNameSort,
+      ordCertificationName: certificationSort,
+      ordEndDate: endDateSort,
+    }),
     handleEmployeeNameChange,
     handleSearch,
     handlePageChange,

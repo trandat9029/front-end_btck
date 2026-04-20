@@ -36,6 +36,7 @@ export default function EmployeeListPage() {
     employeeNameSort,
     certificationSort,
     endDateSort,
+    searchStateQuery,
     handleEmployeeNameChange,
     handleSearch,
     handlePageChange,
@@ -49,11 +50,17 @@ export default function EmployeeListPage() {
   }, [currentPage, handlePageChange, totalPages]);
 
   /**
-   * Submit form t�m ki?m c?a ADM002 v� chuy?n ph?n x? l� d? li?u xu?ng hook.
+   * Submit form tìm kiếm của ADM002 và chuyển phần xử lý dữ liệu xuống hook.
    */
   const handleSearchSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await handleSearch(employeeName.trim());
+  };
+
+  const handleNavigateToADM004 = () => {
+    router.push(
+      searchStateQuery ? `/employees/adm004?${searchStateQuery}` : "/employees/adm004"
+    );
   };
 
   return (
@@ -110,7 +117,7 @@ export default function EmployeeListPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => router.push("/employees/edit")}
+                  onClick={handleNavigateToADM004}
                   className="btn btn-secondary btn-sm"
                 >
                   新規追加
