@@ -9,6 +9,11 @@ export default function EmployeeEditPage() {
   useAuth();
   const searchParams = useSearchParams();
   const {
+    departments,
+    departmentId,
+    setDepartmentId,
+    isLoadingDepartments,
+    departmentErrorMessage,
     certifications,
     certificationId,
     setCertificationId,
@@ -20,6 +25,11 @@ export default function EmployeeEditPage() {
   return (
     <div className="row">
       <EmpolyeeInputForm
+        departments={departments}
+        departmentId={departmentId}
+        onDepartmentChange={setDepartmentId}
+        isLoadingDepartments={isLoadingDepartments}
+        departmentErrorMessage={departmentErrorMessage}
         certifications={certifications}
         certificationId={certificationId}
         onCertificationChange={setCertificationId}

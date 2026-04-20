@@ -5,8 +5,14 @@ import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Certification } from '@/types/certifications';
+import { Department } from '@/types/department';
 
 type EmployeeInputFormProps = {
+  departments: Department[];
+  departmentId: string;
+  onDepartmentChange: (value: string) => void;
+  isLoadingDepartments: boolean;
+  departmentErrorMessage: string;
   certifications: Certification[];
   certificationId: string;
   onCertificationChange: (value: string) => void;
@@ -17,6 +23,11 @@ type EmployeeInputFormProps = {
 };
 
 function EmpolyeeInputForm({
+  departments,
+  departmentId,
+  onDepartmentChange,
+  isLoadingDepartments,
+  departmentErrorMessage,
   certifications,
   certificationId,
   onCertificationChange,
@@ -46,6 +57,7 @@ function EmpolyeeInputForm({
     );
   };
 
+  // Cập nhật chứng chỉ người dùng chọn và xóa ngày hiệu lực/ngày hết hạn khi bỏ chọn chứng chỉ.
   const handleCertificationSelectChange = (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -84,11 +96,25 @@ function EmpolyeeInputForm({
               </i>
             </label>
             <div className="col-sm col-sm-10">
-              <select className="form-control">
-                <option>選択してください</option>
-                <option>Nhóm 1</option>
-                <option>Nhóm 2</option>
+              <select
+                className="form-control"
+                value={departmentId}
+                onChange={(event) => onDepartmentChange(event.target.value)}
+                disabled={isLoadingDepartments}
+              >
+                <option value="">選択してください</option>
+                {departments.map((department) => (
+                  <option
+                    key={department.department_id}
+                    value={String(department.department_id)}
+                  >
+                    {department.department_name}
+                  </option>
+                ))}
               </select>
+              {departmentErrorMessage && (
+                <div className="text-danger mt-1">{departmentErrorMessage}</div>
+              )}
             </div>
           </li>
           <li className="form-group row d-flex">
