@@ -10,21 +10,21 @@ import { useADM005 } from '@/hooks/useADM005';
 export default function EmployeeConfirmPage() {
   useAuth();
   const router = useRouter();
-  const draftEmployee = useADM005();
+  const employeeData = useADM005();
 
   useEffect(() => {
-    if (!draftEmployee) {
+    if (!employeeData) {
       router.replace('/employees/adm004');
     }
-  }, [draftEmployee, router]);
+  }, [employeeData, router]);
 
-  if (!draftEmployee) {
+  if (!employeeData) {
     return null;
   }
 
   return (
     <div className="row">
-      <EmployeeFormConfirm draftEmployee={draftEmployee} />
+      <EmployeeFormConfirm employeeData={employeeData} />
     </div>
   );
 }

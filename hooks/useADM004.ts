@@ -103,14 +103,14 @@ const getInitialFormData = (
   mode: EmployeeFormMode,
   employeeId?: number
 ): EmployeeFormData => {
-  const draftEmployee = loadEmployeeFormDraft();
+  const employeeData = loadEmployeeFormDraft();
 
   if (
-    draftEmployee?.formData &&
-    draftEmployee.mode === mode &&
-    draftEmployee.employeeId === employeeId
+    employeeData?.formData &&
+    employeeData.mode === mode &&
+    employeeData.employeeId === employeeId
   ) {
-    return draftEmployee.formData;
+    return employeeData.formData;
   }
 
   if (mode === EDIT && employeeId) {
@@ -248,9 +248,9 @@ export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
 
   // Chi luu sessionStorage khi user bam Confirm o ADM004.
   const persistDraft = useCallback(() => {
-    const draftEmployee = createEmployeeFormDraft(formData, mode, employeeId);
-    saveEmployeeFormDraft(draftEmployee);
-    return draftEmployee;
+    const employeeData = createEmployeeFormDraft(formData, mode, employeeId);
+    saveEmployeeFormDraft(employeeData);
+    return employeeData;
   }, [employeeId, formData, mode]);
 
   const clearDraft = useCallback(() => {

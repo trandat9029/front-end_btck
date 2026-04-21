@@ -10,11 +10,11 @@ import { Department } from '@/types/department';
 import { EmployeeFormDraft } from '@/types/employee';
 
 type EmployeeFormConfirmProps = {
-  draftEmployee: EmployeeFormDraft;
+  employeeData: EmployeeFormDraft;
 };
 
 // Hiển thị màn hình xác nhận thông tin nhân viên trước khi lưu.
-function EmployeeFormConfirm({ draftEmployee }: EmployeeFormConfirmProps) {
+function EmployeeFormConfirm({ employeeData }: EmployeeFormConfirmProps) {
   const router = useRouter();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [certifications, setCertifications] = useState<Certification[]>([]);
@@ -46,31 +46,31 @@ function EmployeeFormConfirm({ draftEmployee }: EmployeeFormConfirmProps) {
 
   const departmentName = useMemo(() => {
     // Tìm tên phòng ban theo departmentId người dùng đã chọn.
-    if (!draftEmployee.formData.departmentId) {
+    if (!employeeData.formData.departmentId) {
       return '';
     }
 
     return (
       departments.find(
         (department) =>
-          String(department.department_id) === draftEmployee.formData.departmentId
+          String(department.department_id) === employeeData.formData.departmentId
       )?.department_name ?? ''
     );
-  }, [departments, draftEmployee]);
+  }, [departments, employeeData]);
 
   const certificationName = useMemo(() => {
     // Tìm tên chứng chỉ theo certificationId người dùng đã chọn.
-    if (!draftEmployee.formData.certificationId) {
+    if (!employeeData.formData.certificationId) {
       return '';
     }
 
     return (
       certifications.find(
         (certification) =>
-          String(certification.certification_id) === draftEmployee.formData.certificationId
+          String(certification.certification_id) === employeeData.formData.certificationId
       )?.certification_name ?? ''
     );
-  }, [certifications, draftEmployee]);
+  }, [certifications, employeeData]);
 
   // Xóa dữ liệu nháp và chuyển sang màn hình hoàn tất khi người dùng bấm OK.
   const handleSubmit = () => {
@@ -80,8 +80,8 @@ function EmployeeFormConfirm({ draftEmployee }: EmployeeFormConfirmProps) {
 
   // Quay lại ADM004 và giữ nguyên query string trước đó nếu có.
   const handleCancel = () => {
-    if (draftEmployee.mode === 'edit' && draftEmployee.employeeId) {
-      router.push(`/employees/adm004?id=${draftEmployee.employeeId}`);
+    if (employeeData.mode === 'edit' && employeeData.employeeId) {
+      router.push(`/employees/adm004?id=${employeeData.employeeId}`);
       return;
     }
 
@@ -97,7 +97,7 @@ function EmployeeFormConfirm({ draftEmployee }: EmployeeFormConfirmProps) {
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">アカウント名</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.employeeLoginId}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.employeeLoginId}</div>
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">グループ</label>
@@ -105,23 +105,23 @@ function EmployeeFormConfirm({ draftEmployee }: EmployeeFormConfirmProps) {
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">氏名</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.employeeName}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.employeeName}</div>
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">カタカナ氏名</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.employeeNameKana}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.employeeNameKana}</div>
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">生年月日</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.employeeBirthDate}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.employeeBirthDate}</div>
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">メールアドレス</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.employeeEmail}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.employeeEmail}</div>
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">電話番号</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.employeeTelephone}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.employeeTelephone}</div>
         </li>
         <li className="title mt-12">
           <a href="#!">日本語能力</a>
@@ -132,15 +132,15 @@ function EmployeeFormConfirm({ draftEmployee }: EmployeeFormConfirmProps) {
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">資格交付日</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.certificationStartDate}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.certificationStartDate}</div>
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">失効日</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.certificationEndDate}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.certificationEndDate}</div>
         </li>
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">点数</label>
-          <div className="col-sm col-sm-10">{draftEmployee.formData.score}</div>
+          <div className="col-sm col-sm-10">{employeeData.formData.score}</div>
         </li>
         <li className="form-group row d-flex">
           <div className="btn-group col-sm col-sm-10 ml">
