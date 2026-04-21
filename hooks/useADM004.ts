@@ -1,22 +1,138 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ADD, EDIT, EMPLOYEE_FORM_DRAFT_STORAGE_KEY } from '@/constants/employee';
 import { certificationApi } from '@/lib/api/certifications';
-import { Certification } from '@/types/certifications';
 import { departmentApi } from '@/lib/api/department';
+import { Certification } from '@/types/certifications';
 import { Department } from '@/types/department';
+import { EmployeeFormData, EmployeeFormDraft, EmployeeFormMode } from '@/types/employee';
 
-export const useADM004 = () => {
+// Tao du lieu mac dinh rong cho toan bo form nhan vien.
+export const createEmptyEmployeeFormData = (): EmployeeFormData => ({
+  employeeLoginId: '',
+  departmentId: '',
+  employeeName: '',
+  employeeNameKana: '',
+  employeeBirthDate: '',
+  employeeEmail: '',
+  employeeTelephone: '',
+  employeeLoginPassword: '',
+  employeeLoginPasswordConfirm: '',
+  certificationId: '',
+  certificationStartDate: '',
+  certificationEndDate: '',
+  score: '',
+});
+
+// Tao object draft tu du lieu form va mode hien tai.
+export const createEmployeeFormDraft = (
+  formData: EmployeeFormData,
+  mode: EmployeeFormMode,
+  employeeId?: number
+): EmployeeFormDraft => ({
+  formData,
+  mode,
+  employeeId,
+});
+
+// Chuyen chuoi JSON trong storage thanh object draft hop le.
+export const parseEmployeeFormDraft = (
+  value: string | null | undefined
+): EmployeeFormDraft | null => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as Partial<EmployeeFormDraft>;
+
+    if (!parsed || typeof parsed !== 'object' || !parsed.formData) {
+      return null;
+    }
+
+    return {
+      formData: {
+        ...createEmptyEmployeeFormData(),
+        ...parsed.formData,
+      },
+      mode: parsed.mode === EDIT ? EDIT : ADD,
+      employeeId:
+        typeof parsed.employeeId === 'number' && Number.isInteger(parsed.employeeId)
+          ? parsed.employeeId
+          : undefined,
+    };
+  } catch {
+    return null;
+  }
+};
+
+// Doc draft da luu trong sessionStorage.
+export const loadEmployeeFormDraft = (): EmployeeFormDraft | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return parseEmployeeFormDraft(
+    window.sessionStorage.getItem(EMPLOYEE_FORM_DRAFT_STORAGE_KEY)
+  );
+};
+
+// Luu draft vao sessionStorage.
+export const saveEmployeeFormDraft = (draft: EmployeeFormDraft) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.setItem(
+    EMPLOYEE_FORM_DRAFT_STORAGE_KEY,
+    JSON.stringify(draft)
+  );
+};
+
+// Xoa draft khoi sessionStorage.
+export const clearEmployeeFormDraft = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.removeItem(EMPLOYEE_FORM_DRAFT_STORAGE_KEY);
+};
+
+const getInitialFormData = (
+  mode: EmployeeFormMode,
+  employeeId?: number
+): EmployeeFormData => {
+  const draftEmployee = loadEmployeeFormDraft();
+
+  if (
+    draftEmployee?.formData &&
+    draftEmployee.mode === mode &&
+    draftEmployee.employeeId === employeeId
+  ) {
+    return draftEmployee.formData;
+  }
+
+  if (mode === EDIT && employeeId) {
+    // Khung xu ly edit:
+    // 1. Goi API lay chi tiet nhan vien theo employeeId.
+    // 2. Map du lieu API sang EmployeeFormData.
+    // 3. Tra ve du lieu da map de bind len form.
+  }
+
+  return createEmptyEmployeeFormData();
+};
+
+export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [departmentId, setDepartmentId] = useState('');
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
   const [departmentErrorMessage, setDepartmentErrorMessage] = useState('');
   const [certifications, setCertifications] = useState<Certification[]>([]);
-  const [certificationId, setCertificationId] = useState('');
   const [isLoadingCertifications, setIsLoadingCertifications] = useState(true);
   const [certificationErrorMessage, setCertificationErrorMessage] = useState('');
+  const [formData, setFormData] = useState<EmployeeFormData>(createEmptyEmployeeFormData);
+  const [isDraftReady, setIsDraftReady] = useState(false);
 
-  // Tải danh sách phòng ban từ API để hiển thị cho combobox nhóm trên màn hình ADM004.
   const fetchDepartments = useCallback(async () => {
     setIsLoadingDepartments(true);
     setDepartmentErrorMessage('');
@@ -41,7 +157,6 @@ export const useADM004 = () => {
     }
   }, []);
 
-  // Tải danh sách chứng chỉ từ API, đồng thời cập nhật trạng thái loading và lỗi cho màn hình.
   const fetchCertifications = useCallback(async () => {
     setIsLoadingCertifications(true);
     setCertificationErrorMessage('');
@@ -69,33 +184,92 @@ export const useADM004 = () => {
   }, []);
 
   useEffect(() => {
-    void fetchDepartments();
-    void fetchCertifications();
-  }, [fetchCertifications, fetchDepartments]);
+    let isMounted = true;
 
-  // Tìm thông tin chi tiết của chứng chỉ đang được chọn dựa trên certificationId hiện tại.
+    const initialize = async () => {
+      if (isMounted) {
+        setIsLoadingDepartments(true);
+        setIsLoadingCertifications(true);
+        setIsDraftReady(false);
+      }
+
+      const initialFormData = getInitialFormData(mode, employeeId);
+      if (isMounted) {
+        setFormData(initialFormData);
+        setIsDraftReady(true);
+      }
+
+      await Promise.all([fetchDepartments(), fetchCertifications()]);
+
+      if (!isMounted) {
+        return;
+      }
+    };
+
+    void initialize();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [employeeId, mode, fetchCertifications, fetchDepartments]);
+
+  const updateFormField = useCallback(
+    <K extends keyof EmployeeFormData>(field: K, value: EmployeeFormData[K]) => {
+      setFormData((currentFormData) => {
+        if (field === 'certificationId' && value === '') {
+          return {
+            ...currentFormData,
+            certificationId: '',
+            certificationStartDate: '',
+            certificationEndDate: '',
+            score: '',
+          };
+        }
+
+        return {
+          ...currentFormData,
+          [field]: value,
+        };
+      });
+    },
+    []
+  );
+
   const selectedCertification = useMemo(
     () =>
       certifications.find(
-        (certification) => String(certification.certification_id) === certificationId
+        (certification) =>
+          String(certification.certification_id) === formData.certificationId
       ) ?? null,
-    [certifications, certificationId]
+    [certifications, formData.certificationId]
   );
 
-  const isCertificationSelected = certificationId !== '';
+  const isCertificationSelected = formData.certificationId !== '';
+
+  // Chi luu sessionStorage khi user bam Confirm o ADM004.
+  const persistDraft = useCallback(() => {
+    const draftEmployee = createEmployeeFormDraft(formData, mode, employeeId);
+    saveEmployeeFormDraft(draftEmployee);
+    return draftEmployee;
+  }, [employeeId, formData, mode]);
+
+  const clearDraft = useCallback(() => {
+    clearEmployeeFormDraft();
+  }, []);
 
   return {
     departments,
-    departmentId,
-    setDepartmentId,
     isLoadingDepartments,
     departmentErrorMessage,
     certifications,
-    certificationId,
-    setCertificationId,
-    selectedCertification,
-    isCertificationSelected,
     isLoadingCertifications,
     certificationErrorMessage,
+    formData,
+    isDraftReady,
+    selectedCertification,
+    isCertificationSelected,
+    updateFormField,
+    persistDraft,
+    clearDraft,
   };
 };

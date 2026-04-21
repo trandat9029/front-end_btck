@@ -98,3 +98,27 @@ export interface GetEmployeesParams {
   offset?: number;
   limit?: number;
 }
+
+export interface EmployeeFormData {
+  employeeLoginId: string;
+  departmentId: string;
+  employeeName: string;
+  employeeNameKana: string;
+  employeeBirthDate: string;
+  employeeEmail: string;
+  employeeTelephone: string;
+  employeeLoginPassword: string;
+  employeeLoginPasswordConfirm: string;
+  certificationId: string;
+  certificationStartDate: string;
+  certificationEndDate: string;
+  score: string;
+}
+
+export type EmployeeFormMode = 'add' | 'edit';
+
+export interface EmployeeFormDraft {
+  formData: EmployeeFormData;
+  mode: EmployeeFormMode;
+  employeeId?: number;
+}
