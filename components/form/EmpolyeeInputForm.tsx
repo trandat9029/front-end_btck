@@ -8,6 +8,10 @@ import { Certification } from '@/types/certifications';
 import { Department } from '@/types/department';
 import { EmployeeFormData } from '@/types/employee';
 
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { employeeSchema } from '@/lib/validation/employee';
+
 type EmployeeInputFormProps = {
   departments: Department[];
   isLoadingDepartments: boolean;
@@ -44,6 +48,35 @@ function EmpolyeeInputForm({
 }: EmployeeInputFormProps) {
   const router = useRouter();
 
+  // Khởi tạo React Hook Form với Zod Schema (employeeSchema) để xử lý Validation
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors }, // errors chứa toàn bộ các lỗi validation trả về từ Zod
+    setValue,
+    trigger, // Hàm trigger dùng để ép chạy validate thủ công
+  } = useForm<EmployeeFormData>({
+    resolver: zodResolver(employeeSchema), // Kết nối Zod Schema vào Hook Form
+    defaultValues: formData, // Lấy dữ liệu mặc định từ state của component cha (qua useADM004)
+    mode: 'onBlur', // Trigger validate khi người dùng click ra ngoài (blur)
+    reValidateMode: 'onChange' // Validate lại liên tục khi người dùng bắt đầu gõ để sửa lỗi
+  });
+
+  // Hàm trung gian xử lý khi một field thay đổi giá trị
+  const handleFieldChange = (field: keyof EmployeeFormData, value: any) => {
+    // 1. Đồng bộ giá trị lên state formData ở component cha (để phục vụ việc lưu draft/submit)
+    onFormFieldChange(field, value);
+    // 2. Cập nhật giá trị vào React Hook Form và ép chạy validate (bắn lỗi Zod nếu có) ngay lập tức
+    setValue(field, value, { shouldValidate: true });
+  };
+
+  // Hàm xử lý khi người dùng focus vào field rồi nhấn click ra ngoài (blur)
+  const handleFieldBlur = (field: keyof EmployeeFormData) => {
+    // Báo cho Hook Form kiểm tra lỗi riêng trường này
+    trigger(field);
+  };
+
   const getDateValue = (value: string) => {
     if (!value) {
       return null;
@@ -59,13 +92,19 @@ function EmpolyeeInputForm({
       | 'certificationEndDate',
     value: Date | null
   ) => {
-    onFormFieldChange(field, value ? format(value, 'yyyy-MM-dd') : '');
+    const strValue = value ? format(value, 'yyyy-MM-dd') : '';
+    onFormFieldChange(field, strValue);
+    setValue(field, strValue, { shouldValidate: true });
   };
 
-  const handleConfirm = () => {
-    onPersistDraft();
-    router.push('/employees/adm005');
-  };
+  // Xử lý khi click nút "Xác nhận" (Confirm)
+  // Được bọc trong handleSubmit của React Hook Form: 
+  // -> Chỉ khi KHÔNG CÓ LỖI VALIDATION nào (form hợp lệ) thì code callback bên trong mới được chạy
+  // -> Nếu CÓ LỖI (nhập thiếu, sai format...), submit sẽ bị block và hiển thị các dòng text-danger
+  const handleConfirm = handleSubmit(() => {
+    onPersistDraft(); // Lưu form data hiện tại vào sessionStorage
+    router.push('/employees/adm005'); // Chuyển sang màn hình Xác nhận
+  });
 
   const handleBack = () => {
     onClearDraft();
@@ -77,7 +116,7 @@ function EmpolyeeInputForm({
   };
 
   return (
-    <form className="c-form box-shadow">
+    <form className="c-form box-shadow" onSubmit={(e) => { e.preventDefault(); }}>
       <ul>
         <li className="title">会員情報編集</li>
         {!isDraftReady && (
@@ -97,9 +136,13 @@ function EmpolyeeInputForm({
               className="form-control"
               value={formData.employeeLoginId}
               onChange={(event) =>
-                onFormFieldChange('employeeLoginId', event.target.value)
+                // Khi gõ sẽ gọi hàm handleFieldChange để vừa update state cha, vừa báo cho Zod Validate
+                handleFieldChange('employeeLoginId', event.target.value)
               }
+              onBlur={() => handleFieldBlur('employeeLoginId')}
             />
+            {/* Nếu Zod bắt được lỗi ở trường này, errors.employeeLoginId sẽ có giá trị và hiển thị message lỗi màu đỏ */}
+            {errors.employeeLoginId && <div className="text-danger mt-1 error-message">{errors.employeeLoginId.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -113,8 +156,9 @@ function EmpolyeeInputForm({
               className="form-control"
               value={formData.departmentId}
               onChange={(event) =>
-                onFormFieldChange('departmentId', event.target.value)
+                handleFieldChange('departmentId', event.target.value)
               }
+              onBlur={() => handleFieldBlur('departmentId')}
               disabled={isLoadingDepartments}
             >
               <option value="">選択してください</option>
@@ -130,6 +174,7 @@ function EmpolyeeInputForm({
             {departmentErrorMessage && (
               <div className="text-danger mt-1">{departmentErrorMessage}</div>
             )}
+            {errors.departmentId && <div className="text-danger mt-1 error-message">{errors.departmentId.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -143,8 +188,10 @@ function EmpolyeeInputForm({
               type="text"
               className="form-control"
               value={formData.employeeName}
-              onChange={(event) => onFormFieldChange('employeeName', event.target.value)}
+              onChange={(event) => handleFieldChange('employeeName', event.target.value)}
+              onBlur={() => handleFieldBlur('employeeName')}
             />
+            {errors.employeeName && <div className="text-danger mt-1 error-message">{errors.employeeName.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -159,9 +206,11 @@ function EmpolyeeInputForm({
               className="form-control"
               value={formData.employeeNameKana}
               onChange={(event) =>
-                onFormFieldChange('employeeNameKana', event.target.value)
+                handleFieldChange('employeeNameKana', event.target.value)
               }
+              onBlur={() => handleFieldBlur('employeeNameKana')}
             />
+            {errors.employeeNameKana && <div className="text-danger mt-1 error-message">{errors.employeeNameKana.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -170,17 +219,19 @@ function EmpolyeeInputForm({
               生年月日:<span className="note-red">*</span>
             </i>
           </label>
-          <div className="col-sm col-sm-10 d-flex">
+          <div className="col-sm col-sm-10 d-flex flex-column">
             <div className="datepicker-wrapper">
               <DatePicker
                 selected={getDateValue(formData.employeeBirthDate)}
                 onChange={(date) => handleDateChange('employeeBirthDate', date)}
+                onBlur={() => handleFieldBlur('employeeBirthDate')}
                 dateFormat="yyyy-MM-dd"
                 className="form-control"
                 placeholderText="YYYY-MM-DD"
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
+            {errors.employeeBirthDate && <div className="text-danger mt-1 error-message">{errors.employeeBirthDate.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -194,8 +245,10 @@ function EmpolyeeInputForm({
               type="email"
               className="form-control"
               value={formData.employeeEmail}
-              onChange={(event) => onFormFieldChange('employeeEmail', event.target.value)}
+              onChange={(event) => handleFieldChange('employeeEmail', event.target.value)}
+              onBlur={() => handleFieldBlur('employeeEmail')}
             />
+            {errors.employeeEmail && <div className="text-danger mt-1 error-message">{errors.employeeEmail.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -210,9 +263,11 @@ function EmpolyeeInputForm({
               className="form-control"
               value={formData.employeeTelephone}
               onChange={(event) =>
-                onFormFieldChange('employeeTelephone', event.target.value)
+                handleFieldChange('employeeTelephone', event.target.value)
               }
+              onBlur={() => handleFieldBlur('employeeTelephone')}
             />
+            {errors.employeeTelephone && <div className="text-danger mt-1 error-message">{errors.employeeTelephone.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -227,9 +282,11 @@ function EmpolyeeInputForm({
               className="form-control"
               value={formData.employeeLoginPassword}
               onChange={(event) =>
-                onFormFieldChange('employeeLoginPassword', event.target.value)
+                handleFieldChange('employeeLoginPassword', event.target.value)
               }
+              onBlur={() => handleFieldBlur('employeeLoginPassword')}
             />
+            {errors.employeeLoginPassword && <div className="text-danger mt-1 error-message">{errors.employeeLoginPassword.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -242,9 +299,11 @@ function EmpolyeeInputForm({
               className="form-control"
               value={formData.employeeLoginPasswordConfirm}
               onChange={(event) =>
-                onFormFieldChange('employeeLoginPasswordConfirm', event.target.value)
+                handleFieldChange('employeeLoginPasswordConfirm', event.target.value)
               }
+              onBlur={() => handleFieldBlur('employeeLoginPasswordConfirm')}
             />
+            {errors.employeeLoginPasswordConfirm && <div className="text-danger mt-1 error-message">{errors.employeeLoginPasswordConfirm.message}</div>}
           </div>
         </li>
         <li className="title mt-12">
@@ -259,8 +318,9 @@ function EmpolyeeInputForm({
               className="form-control"
               value={formData.certificationId}
               onChange={(event) =>
-                onFormFieldChange('certificationId', event.target.value)
+                handleFieldChange('certificationId', event.target.value)
               }
+              onBlur={() => handleFieldBlur('certificationId')}
               disabled={isLoadingCertifications}
             >
               <option value="">選択してください</option>
@@ -276,6 +336,7 @@ function EmpolyeeInputForm({
             {certificationErrorMessage && (
               <div className="text-danger mt-1">{certificationErrorMessage}</div>
             )}
+            {errors.certificationId && <div className="text-danger mt-1 error-message">{errors.certificationId.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -284,11 +345,12 @@ function EmpolyeeInputForm({
               資格交付日:<span className="note-red">*</span>
             </i>
           </label>
-          <div className="col-sm col-sm-10 d-flex">
+          <div className="col-sm col-sm-10 d-flex flex-column">
             <div className="datepicker-wrapper">
               <DatePicker
                 selected={getDateValue(formData.certificationStartDate)}
                 onChange={(date) => handleDateChange('certificationStartDate', date)}
+                onBlur={() => handleFieldBlur('certificationStartDate')}
                 dateFormat="yyyy-MM-dd"
                 className="form-control"
                 placeholderText="YYYY-MM-DD"
@@ -296,6 +358,7 @@ function EmpolyeeInputForm({
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
+            {errors.certificationStartDate && <div className="text-danger mt-1 error-message">{errors.certificationStartDate.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -304,11 +367,12 @@ function EmpolyeeInputForm({
               失効日:<span className="note-red">*</span>
             </i>
           </label>
-          <div className="col-sm col-sm-10 d-flex">
+          <div className="col-sm col-sm-10 d-flex flex-column">
             <div className="datepicker-wrapper">
               <DatePicker
                 selected={getDateValue(formData.certificationEndDate)}
                 onChange={(date) => handleDateChange('certificationEndDate', date)}
+                onBlur={() => handleFieldBlur('certificationEndDate')}
                 dateFormat="yyyy-MM-dd"
                 className="form-control"
                 placeholderText="YYYY-MM-DD"
@@ -316,6 +380,7 @@ function EmpolyeeInputForm({
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
+            {errors.certificationEndDate && <div className="text-danger mt-1 error-message">{errors.certificationEndDate.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">
@@ -324,12 +389,14 @@ function EmpolyeeInputForm({
           </label>
           <div className="col-sm col-sm-10">
             <input
-              type="number"
+              type="text"
               className="form-control"
               value={formData.score}
-              onChange={(event) => onFormFieldChange('score', event.target.value)}
+              onChange={(event) => handleFieldChange('score', event.target.value)}
+              onBlur={() => handleFieldBlur('score')}
               disabled={!isCertificationSelected}
             />
+            {errors.score && <div className="text-danger mt-1 error-message">{errors.score.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">

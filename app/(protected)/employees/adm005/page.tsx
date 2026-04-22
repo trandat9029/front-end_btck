@@ -6,25 +6,37 @@ import EmployeeFormConfirm from '@/components/form/EmployeeFormConfirm';
 import { useAuth } from '@/hooks/useAuth';
 import { useADM005 } from '@/hooks/useADM005';
 
-// Điều hướng màn hình ADM005; nếu không có draft thì quay về ADM004.
+// Dieu huong man hinh ADM005; neu khong co draft thi quay ve ADM004.
 export default function EmployeeConfirmPage() {
   useAuth();
   const router = useRouter();
-  const employeeData = useADM005();
+  const {
+    draftEmployee,
+    departmentName,
+    certificationName,
+    handleSubmit,
+    handleCancel,
+  } = useADM005();
 
   useEffect(() => {
-    if (!employeeData) {
+    if (!draftEmployee) {
       router.replace('/employees/adm004');
     }
-  }, [employeeData, router]);
+  }, [draftEmployee, router]);
 
-  if (!employeeData) {
+  if (!draftEmployee) {
     return null;
   }
 
   return (
     <div className="row">
-      <EmployeeFormConfirm employeeData={employeeData} />
+      <EmployeeFormConfirm
+        draftEmployee={draftEmployee}
+        departmentName={departmentName}
+        certificationName={certificationName}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }
