@@ -25,7 +25,7 @@ export const createEmptyEmployeeFormData = (): EmployeeFormData => ({
   score: '',
 });
 
-// Tao object draft tu du lieu form va mode hien tai.
+// Tao object data tu du lieu form va mode hien tai.
 export const createEmployeeFormDraft = (
   formData: EmployeeFormData,
   mode: EmployeeFormMode,
@@ -36,7 +36,7 @@ export const createEmployeeFormDraft = (
   employeeId,
 });
 
-// Chuyen chuoi JSON trong storage thanh object draft hop le.
+// Chuyen chuoi JSON trong storage thanh object data hop le.
 export const parseEmployeeFormDraft = (
   value: string | null | undefined
 ): EmployeeFormDraft | null => {
@@ -67,7 +67,7 @@ export const parseEmployeeFormDraft = (
   }
 };
 
-// Doc draft da luu trong sessionStorage.
+// Doc data da luu trong sessionStorage.
 export const loadEmployeeFormDraft = (): EmployeeFormDraft | null => {
   if (typeof window === 'undefined') {
     return null;
@@ -78,7 +78,7 @@ export const loadEmployeeFormDraft = (): EmployeeFormDraft | null => {
   );
 };
 
-// Luu draft vao sessionStorage.
+// Luu data vao sessionStorage.
 export const saveEmployeeFormDraft = (draft: EmployeeFormDraft) => {
   if (typeof window === 'undefined') {
     return;
@@ -90,7 +90,7 @@ export const saveEmployeeFormDraft = (draft: EmployeeFormDraft) => {
   );
 };
 
-// Xoa draft khoi sessionStorage.
+// Xoa data khoi sessionStorage.
 export const clearEmployeeFormDraft = () => {
   if (typeof window === 'undefined') {
     return;
@@ -213,9 +213,12 @@ export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
     };
   }, [employeeId, mode, fetchCertifications, fetchDepartments]);
 
+  // Cập nhật giá trị của một trường trong form vào state (formData)
   const updateFormField = useCallback(
     <K extends keyof EmployeeFormData>(field: K, value: EmployeeFormData[K]) => {
       setFormData((currentFormData) => {
+        // [Nghiệp vụ] Nếu người dùng hủy chọn Bằng cấp/Chứng chỉ (chọn lại giá trị rỗng)
+        // thì tự động clear các trường ngày cấp, ngày hết hạn và điểm số liên quan đi kèm
         if (field === 'certificationId' && value === '') {
           return {
             ...currentFormData,
