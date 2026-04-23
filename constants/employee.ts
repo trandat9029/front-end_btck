@@ -7,7 +7,7 @@ export const DEFAULT_SORTS = {
 };
 
 export const MAX_LENGTH = 125;
-export const EMPLOYEE_FORM_DRAFT_STORAGE_KEY = 'adm004-employee-form-draft';
+export const EMPLOYEE_FORM_DATA_STORAGE_KEY = 'adm004-employee-form-data';
 
 export const ADD = 'add';
 export const EDIT = 'edit';

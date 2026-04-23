@@ -2,6 +2,7 @@
 
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Certification } from '@/types/certifications';
@@ -21,13 +22,15 @@ type EmployeeInputFormProps = {
   certificationErrorMessage: string;
   formData: EmployeeFormData;
   isCertificationSelected: boolean;
-  isDraftReady: boolean;
+  isDataReady: boolean;
+  serverErrorMessage?: string;
   onFormFieldChange: <K extends keyof EmployeeFormData>(
     field: K,
     value: EmployeeFormData[K]
   ) => void;
-  onPersistDraft: () => void;
-  onClearDraft: () => void;
+  onSaveData: () => void;
+  onClearData: () => void;
+  onValidate: () => Promise<{ field: string; message: string }[]>;
   returnQueryString?: string;
 };
 
@@ -40,10 +43,11 @@ function EmpolyeeInputForm({
   certificationErrorMessage,
   formData,
   isCertificationSelected,
-  isDraftReady,
+  isDataReady,
   onFormFieldChange,
-  onPersistDraft,
-  onClearDraft,
+  onSaveData,
+  onClearData,
+  onValidate,
   returnQueryString = '',
 }: EmployeeInputFormProps) {
   const router = useRouter();
@@ -56,6 +60,8 @@ function EmpolyeeInputForm({
     formState: { errors }, // errors chứa toàn bộ các lỗi validation trả về từ Zod
     setValue,
     trigger, // Hàm trigger dùng để ép chạy validate thủ công
+    setError, // Dùng để inject lỗi từ server vào form
+    reset,
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema), // Kết nối Zod Schema vào Hook Form
     defaultValues: formData, // Lấy dữ liệu mặc định từ state của component cha (qua useADM004)
@@ -63,9 +69,16 @@ function EmpolyeeInputForm({
     reValidateMode: 'onChange' // Validate lại liên tục khi người dùng bắt đầu gõ để sửa lỗi
   });
 
+  // Đồng bộ dữ liệu từ cha vào Hook Form khi load xong (ví dụ quay lại từ màn ADM005)
+  useEffect(() => {
+    if (isDataReady) {
+      reset(formData);
+    }
+  }, [isDataReady, reset]); // Chỉ chạy khi data từ sessionStorage đã sẵn sàng
+ 
   // Hàm trung gian xử lý khi một field thay đổi giá trị
   const handleFieldChange = (field: keyof EmployeeFormData, value: any) => {
-    // 1. Đồng bộ giá trị lên state formData ở component cha (để phục vụ việc lưu draft/submit)
+    // 1. Đồng bộ giá trị lên state formData ở component cha (để phục vụ việc lưu data/submit)
     onFormFieldChange(field, value);
     // 2. Cập nhật giá trị vào React Hook Form và ép chạy validate (bắn lỗi Zod nếu có) ngay lập tức
     setValue(field, value, { shouldValidate: true });
@@ -99,15 +112,27 @@ function EmpolyeeInputForm({
 
   // Xử lý khi click nút "Xác nhận" (Confirm)
   // Được bọc trong handleSubmit của React Hook Form: 
-  // -> Chỉ khi KHÔNG CÓ LỖI VALIDATION nào (form hợp lệ) thì code callback bên trong mới được chạy
-  // -> Nếu CÓ LỖI (nhập thiếu, sai format...), submit sẽ bị block và hiển thị các dòng text-danger
-  const handleConfirm = handleSubmit(() => {
-    onPersistDraft(); // Lưu form data hiện tại vào sessionStorage
-    router.push('/employees/adm005'); // Chuyển sang màn hình Xác nhận
+  // -> Chỉ khi KHÔNG CÓ LỖI VALIDATION nào ở Client (Zod) thì code callback bên trong mới được chạy
+  const handleConfirm = handleSubmit(async () => {
+    // Gọi API validate ở Backend
+    const serverErrors = await onValidate();
+ 
+    if (serverErrors.length === 0) {
+      onSaveData(); // Lưu form data hiện tại vào sessionStorage
+      router.push('/employees/adm005'); // Chuyển sang màn hình Xác nhận
+    } else {
+      // Nếu có lỗi từ server, inject vào Hook Form để hiển thị dưới từng field tương ứng
+      serverErrors.forEach((error) => {
+        setError(error.field as any, {
+          type: 'server',
+          message: error.message
+        });
+      });
+    }
   });
 
   const handleBack = () => {
-    onClearDraft();
+    onClearData();
     router.push(
       returnQueryString
         ? `/employees/adm002?${returnQueryString}`
@@ -119,11 +144,6 @@ function EmpolyeeInputForm({
     <form className="c-form box-shadow" onSubmit={(e) => { e.preventDefault(); }}>
       <ul>
         <li className="title">会員情報編集</li>
-        {!isDraftReady && (
-          <li className="box-err">
-            <div className="box-err-content">Đang khôi phục dữ liệu biểu mẫu...</div>
-          </li>
-        )}
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">
             <i className="relative">
@@ -391,12 +411,12 @@ function EmpolyeeInputForm({
             <input
               type="text"
               className="form-control"
-              value={formData.score}
-              onChange={(event) => handleFieldChange('score', event.target.value)}
-              onBlur={() => handleFieldBlur('score')}
+              value={formData.employeeCertificationScore}
+              onChange={(event) => handleFieldChange('employeeCertificationScore', event.target.value)}
+              onBlur={() => handleFieldBlur('employeeCertificationScore')}
               disabled={!isCertificationSelected}
             />
-            {errors.score && <div className="text-danger mt-1 error-message">{errors.score.message}</div>}
+            {errors.employeeCertificationScore && <div className="text-danger mt-1 error-message">{errors.employeeCertificationScore.message}</div>}
           </div>
         </li>
         <li className="form-group row d-flex">

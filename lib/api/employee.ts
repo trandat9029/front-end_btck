@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { EmployeeListApiResponse, GetEmployeesParams } from '@/types/employee';
+import { EmployeeFormData, EmployeeListApiResponse, GetEmployeesParams } from '@/types/employee';
 
 export const employeeApi = {
   /**
@@ -21,6 +21,32 @@ export const employeeApi = {
       params: cleanParams,
     });
 
+    return response.data;
+  },
+
+  /**
+   * Gọi API validate dữ liệu nhân viên cho ADM004.
+   */
+  validateEmployee: async (
+    formData: EmployeeFormData
+  ): Promise<EmployeeListApiResponse> => {
+    const response = await apiClient.post<EmployeeListApiResponse>(
+      '/employees/validate',
+      formData
+    );
+    return response.data;
+  },
+
+  /**
+   * Gọi API thực hiện lưu (Thêm mới) nhân viên cho ADM005.
+   */
+  addEmployee: async (
+    formData: EmployeeFormData
+  ): Promise<EmployeeListApiResponse> => {
+    const response = await apiClient.post<EmployeeListApiResponse>(
+      '/employees',
+      formData
+    );
     return response.data;
   },
 };

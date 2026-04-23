@@ -100,6 +100,7 @@ export interface GetEmployeesParams {
 }
 
 export interface EmployeeFormData {
+  employeeId?: number;
   employeeLoginId: string;
   departmentId: string;
   employeeName: string;
@@ -112,12 +113,12 @@ export interface EmployeeFormData {
   certificationId: string;
   certificationStartDate: string;
   certificationEndDate: string;
-  score: string;
+  employeeCertificationScore: string;
 }
 
 export type EmployeeFormMode = 'add' | 'edit';
 
-export interface EmployeeFormDraft {
+export interface EmployeeFormDataStorage {
   formData: EmployeeFormData;
   mode: EmployeeFormMode;
   employeeId?: number;

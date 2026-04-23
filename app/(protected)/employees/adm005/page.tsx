@@ -11,29 +11,31 @@ export default function EmployeeConfirmPage() {
   useAuth();
   const router = useRouter();
   const {
-    draftEmployee,
+    storedEmployeeData,
     departmentName,
     certificationName,
+    isSubmitting,
     handleSubmit,
     handleCancel,
   } = useADM005();
-
+ 
   useEffect(() => {
-    if (!draftEmployee) {
+    if (!storedEmployeeData) {
       router.replace('/employees/adm004');
     }
-  }, [draftEmployee, router]);
-
-  if (!draftEmployee) {
+  }, [storedEmployeeData, router]);
+ 
+  if (!storedEmployeeData) {
     return null;
   }
-
+ 
   return (
     <div className="row">
       <EmployeeFormConfirm
-        draftEmployee={draftEmployee}
+        storedEmployeeData={storedEmployeeData}
         departmentName={departmentName}
         certificationName={certificationName}
+        isSubmitting={isSubmitting}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
       />

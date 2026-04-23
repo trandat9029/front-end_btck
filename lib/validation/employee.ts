@@ -120,7 +120,7 @@ export const employeeSchema = z
     certificationId: z.string().optional(),
     certificationStartDate: z.string().optional(),
     certificationEndDate: z.string().optional(),
-    score: z.string().optional(),
+    employeeCertificationScore: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     // 1.8 Kiểm tra xem Mật khẩu và Xác nhận Mật khẩu có khớp nhau không
@@ -171,20 +171,20 @@ export const employeeSchema = z
         }
       }
 
-      // 1.9.4 Kiểm tra "Điểm số" (score)
+      // 1.9.4 Kiểm tra "Điểm số" (employeeCertificationScore)
       // - Nếu trống -> Báo lỗi ER001
       // - Nếu có nhập nhưng KHÔNG phải là số nguyên dương (regex ^\d+$) -> Báo lỗi ER018
-      if (!data.score) {
+      if (!data.employeeCertificationScore) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: ER001.replace('「画面項目名」', '点数'),
-          path: ['score'],
+          path: ['employeeCertificationScore'],
         });
-      } else if (!/^\d+$/.test(data.score)) {
+      } else if (!/^\d+$/.test(data.employeeCertificationScore)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: ER018.replace('「画面上の項目名」', '点数'),
-          path: ['score'],
+          path: ['employeeCertificationScore'],
         });
       }
     }

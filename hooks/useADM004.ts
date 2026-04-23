@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ADD, EDIT, EMPLOYEE_FORM_DRAFT_STORAGE_KEY } from '@/constants/employee';
+import { ADD, EDIT, EMPLOYEE_FORM_DATA_STORAGE_KEY } from '@/constants/employee';
 import { certificationApi } from '@/lib/api/certifications';
 import { departmentApi } from '@/lib/api/department';
 import { Certification } from '@/types/certifications';
 import { Department } from '@/types/department';
-import { EmployeeFormData, EmployeeFormDraft, EmployeeFormMode } from '@/types/employee';
+import { EmployeeFormData, EmployeeFormDataStorage, EmployeeFormMode } from '@/types/employee';
+import { employeeApi } from '@/lib/api/employee';
 
 // Tao du lieu mac dinh rong cho toan bo form nhan vien.
 export const createEmptyEmployeeFormData = (): EmployeeFormData => ({
@@ -22,35 +23,36 @@ export const createEmptyEmployeeFormData = (): EmployeeFormData => ({
   certificationId: '',
   certificationStartDate: '',
   certificationEndDate: '',
-  score: '',
+  employeeCertificationScore: '',
+  employeeId: undefined,
 });
 
 // Tao object data tu du lieu form va mode hien tai.
-export const createEmployeeFormDraft = (
+export const createEmployeeFormDataStorage = (
   formData: EmployeeFormData,
   mode: EmployeeFormMode,
   employeeId?: number
-): EmployeeFormDraft => ({
+): EmployeeFormDataStorage => ({
   formData,
   mode,
   employeeId,
 });
 
 // Chuyen chuoi JSON trong storage thanh object data hop le.
-export const parseEmployeeFormDraft = (
+export const parseEmployeeFormDataStorage = (
   value: string | null | undefined
-): EmployeeFormDraft | null => {
+): EmployeeFormDataStorage | null => {
   if (!value) {
     return null;
   }
-
+ 
   try {
-    const parsed = JSON.parse(value) as Partial<EmployeeFormDraft>;
-
+    const parsed = JSON.parse(value) as Partial<EmployeeFormDataStorage>;
+ 
     if (!parsed || typeof parsed !== 'object' || !parsed.formData) {
       return null;
     }
-
+ 
     return {
       formData: {
         ...createEmptyEmployeeFormData(),
@@ -68,43 +70,50 @@ export const parseEmployeeFormDraft = (
 };
 
 // Doc data da luu trong sessionStorage.
-export const loadEmployeeFormDraft = (): EmployeeFormDraft | null => {
+export const loadEmployeeFormDataStorage = (): EmployeeFormDataStorage | null => {
   if (typeof window === 'undefined') {
     return null;
   }
-
-  return parseEmployeeFormDraft(
-    window.sessionStorage.getItem(EMPLOYEE_FORM_DRAFT_STORAGE_KEY)
+ 
+  return parseEmployeeFormDataStorage(
+    window.sessionStorage.getItem(EMPLOYEE_FORM_DATA_STORAGE_KEY)
   );
 };
 
 // Luu data vao sessionStorage.
-export const saveEmployeeFormDraft = (draft: EmployeeFormDraft) => {
+export const saveEmployeeFormDataStorage = (dataStorage: EmployeeFormDataStorage) => {
   if (typeof window === 'undefined') {
     return;
   }
-
+ 
   window.sessionStorage.setItem(
-    EMPLOYEE_FORM_DRAFT_STORAGE_KEY,
-    JSON.stringify(draft)
+    EMPLOYEE_FORM_DATA_STORAGE_KEY,
+    JSON.stringify(dataStorage)
   );
 };
 
 // Xoa data khoi sessionStorage.
-export const clearEmployeeFormDraft = () => {
+export const clearEmployeeFormDataStorage = () => {
   if (typeof window === 'undefined') {
     return;
   }
-
-  window.sessionStorage.removeItem(EMPLOYEE_FORM_DRAFT_STORAGE_KEY);
+ 
+  window.sessionStorage.removeItem(EMPLOYEE_FORM_DATA_STORAGE_KEY);
 };
 
 const getInitialFormData = (
   mode: EmployeeFormMode,
+  isBack: boolean,
   employeeId?: number
 ): EmployeeFormData => {
-  const employeeData = loadEmployeeFormDraft();
-
+  // Neu khong phai quay lai tu ADM005 (reload hoac vao moi), xoa data ngay lap tuc.
+  if (!isBack) {
+    clearEmployeeFormDataStorage();
+    return createEmptyEmployeeFormData();
+  }
+ 
+  const employeeData = loadEmployeeFormDataStorage();
+ 
   if (
     employeeData?.formData &&
     employeeData.mode === mode &&
@@ -120,10 +129,16 @@ const getInitialFormData = (
     // 3. Tra ve du lieu da map de bind len form.
   }
 
-  return createEmptyEmployeeFormData();
+  const data = createEmptyEmployeeFormData();
+  data.employeeId = employeeId;
+  return data;
 };
 
-export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
+export const useADM004 = (
+  mode: EmployeeFormMode,
+  isBack: boolean,
+  employeeId?: number
+) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
   const [departmentErrorMessage, setDepartmentErrorMessage] = useState('');
@@ -131,7 +146,9 @@ export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
   const [isLoadingCertifications, setIsLoadingCertifications] = useState(true);
   const [certificationErrorMessage, setCertificationErrorMessage] = useState('');
   const [formData, setFormData] = useState<EmployeeFormData>(createEmptyEmployeeFormData);
-  const [isDraftReady, setIsDraftReady] = useState(false);
+  const [isDataReady, setIsDataReady] = useState(false);
+  // Flag de dam bao chi khoi tao du lieu mot lan duy nhat khi mount
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchDepartments = useCallback(async () => {
     setIsLoadingDepartments(true);
@@ -184,19 +201,24 @@ export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
   }, []);
 
   useEffect(() => {
+    if (isInitialized) {
+      return;
+    }
+
     let isMounted = true;
 
     const initialize = async () => {
       if (isMounted) {
         setIsLoadingDepartments(true);
         setIsLoadingCertifications(true);
-        setIsDraftReady(false);
+        setIsDataReady(false);
       }
 
-      const initialFormData = getInitialFormData(mode, employeeId);
+      const initialFormData = getInitialFormData(mode, isBack, employeeId);
       if (isMounted) {
         setFormData(initialFormData);
-        setIsDraftReady(true);
+        setIsDataReady(true);
+        setIsInitialized(true);
       }
 
       await Promise.all([fetchDepartments(), fetchCertifications()]);
@@ -211,7 +233,7 @@ export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
     return () => {
       isMounted = false;
     };
-  }, [employeeId, mode, fetchCertifications, fetchDepartments]);
+  }, [employeeId, mode, isBack, isInitialized, fetchCertifications, fetchDepartments]);
 
   // Cập nhật giá trị của một trường trong form vào state (formData)
   const updateFormField = useCallback(
@@ -225,7 +247,7 @@ export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
             certificationId: '',
             certificationStartDate: '',
             certificationEndDate: '',
-            score: '',
+            employeeCertificationScore: '',
           };
         }
 
@@ -250,15 +272,42 @@ export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
   const isCertificationSelected = formData.certificationId !== '';
 
   // Chi luu sessionStorage khi user bam Confirm o ADM004.
-  const persistDraft = useCallback(() => {
-    const employeeData = createEmployeeFormDraft(formData, mode, employeeId);
-    saveEmployeeFormDraft(employeeData);
+  const saveFormData = useCallback(() => {
+    const employeeData = createEmployeeFormDataStorage(formData, mode, employeeId);
+    saveEmployeeFormDataStorage(employeeData);
     return employeeData;
   }, [employeeId, formData, mode]);
 
-  const clearDraft = useCallback(() => {
-    clearEmployeeFormDraft();
+  const clearFormData = useCallback(() => {
+    clearEmployeeFormDataStorage();
   }, []);
+
+  /**
+   * Gọi API validate dữ liệu ở Backend.
+   * Tra ve danh sach loi theo field de EmpolyeeInputForm inject vao React Hook Form.
+   * Neu hop le tra ve mang rong.
+   */
+  const validate = useCallback(async (): Promise<{ field: string; message: string }[]> => {
+    try {
+      const response = await employeeApi.validateEmployee(formData);
+
+      if (response.code !== '200') {
+        // Server tra ve danh sach loi theo tung field
+        if (response.fieldErrors && response.fieldErrors.length > 0) {
+          return response.fieldErrors as { field: string; message: string }[];
+        }
+        // Fallback: loi chung khong co field cu the
+        return [{ field: 'employeeLoginId', message: response.message || 'Validation failed.' }];
+      }
+
+      return [];
+    } catch (error) {
+      return [{
+        field: 'employeeLoginId',
+        message: error instanceof Error ? error.message : 'System error occurred.'
+      }];
+    }
+  }, [formData]);
 
   return {
     departments,
@@ -268,11 +317,12 @@ export const useADM004 = (mode: EmployeeFormMode, employeeId?: number) => {
     isLoadingCertifications,
     certificationErrorMessage,
     formData,
-    isDraftReady,
+    isDataReady,
     selectedCertification,
     isCertificationSelected,
     updateFormField,
-    persistDraft,
-    clearDraft,
+    saveFormData,
+    clearFormData,
+    validate,
   };
 };
