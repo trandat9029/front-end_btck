@@ -1,3 +1,7 @@
+/**
+ * Copyright(C) 2026 Luvina
+ * [employee.ts], 26/04/2026 tranledat
+ */
 // Biểu diễn dữ liệu phía backend/cơ sở dữ liệu
 export interface EmployeeDB {
   employeeId: number;
@@ -129,3 +133,26 @@ export interface EmployeeFormDataStorage {
   mode: EmployeeFormMode;
   employeeId?: number;
 }
+
+export interface EmployeeCertificationDetail {
+  certificationId: number;
+  certificationName: string;
+  startDate: string;
+  endDate: string;
+  score: number;
+}
+
+export interface EmployeeDetailResponse {
+  code: string;
+  employeeId: number;
+  employeeName: string;
+  employeeNameKana: string;
+  employeeBirthDate: string;
+  employeeEmail: string;
+  employeeTelephone: string;
+  employeeLoginId: string;
+  departmentId: number;
+  departmentName: string;
+  certifications: EmployeeCertificationDetail[];
+}
+

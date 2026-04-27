@@ -97,7 +97,6 @@ export default function EmployeeTable({
                     {e.employeeName}
                   </Link>
                 </div>
-                <div title={e.employeeName}>{e.employeeName}</div>
                 <div>{e.employeeBirthDate}</div>
                 <div>{e.departmentName}</div>
                 <div>{e.employeeEmail}</div>

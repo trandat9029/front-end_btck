@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from './client';
-import { EmployeeFormData, EmployeeListApiResponse, GetEmployeesParams } from '@/types/employee';
+import { EmployeeDetailResponse, EmployeeFormData, EmployeeListApiResponse, GetEmployeesParams } from '@/types/employee';
 
 /**
  * Các phương thức gọi API liên quan đến nhân viên.
@@ -66,12 +66,22 @@ export const employeeApi = {
   },
 
   /**
-   * Lấy thông tin chi tiết nhân viên theo ID.
-   * @param id ID của nhân viên cần lấy
-   * @return Thông tin chi tiết nhân viên
+   * Gọi API lấy thông tin chi tiết nhân viên theo ID.
+   * @param id ID của nhân viên cần lấy thông tin
+   * @return EmployeeDetailResponse Thông tin chi tiết của nhân viên bao gồm cả danh sách chứng chỉ
    */
-  getEmployeeById: async (id: number | string): Promise<any> => {
-    const response = await apiClient.get<any>(`/employees/${id}`);
+  getEmployeeById: async (id: number): Promise<EmployeeDetailResponse> => {
+    const response = await apiClient.get<EmployeeDetailResponse>(`/employees/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Gọi API thực hiện xóa một nhân viên dựa trên ID.
+   * @param id ID của nhân viên muốn xóa khỏi hệ thống
+   * @return EmployeeListApiResponse Kết quả thực hiện xóa (thành công hoặc mã lỗi)
+   */
+  deleteEmployee: async (id: number): Promise<EmployeeListApiResponse> => {
+    const response = await apiClient.delete<EmployeeListApiResponse>(`/employees/${id}`);
     return response.data;
   },
 };
