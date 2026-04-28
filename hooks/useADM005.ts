@@ -13,6 +13,7 @@ import { employeeApi } from '@/lib/api/employee';
 import { Certification } from '@/types/certifications';
 import { Department } from '@/types/department';
 import * as MessageCode from '@/constants/messageCode';
+import * as Messages from '@/constants/messages';
 import {
   clearEmployeeFormDataStorage,
   loadEmployeeFormDataStorage
@@ -101,6 +102,9 @@ export const useADM005 = () => {
       'ER014': MessageCode.ER014,
       'ER015': MessageCode.ER015,
       'ER023': MessageCode.ER023,
+      'MSG001': MessageCode.MSG001,
+      'MSG002': MessageCode.MSG002,
+      'MSG003': MessageCode.MSG003,
     };
 
     return errorMap[code] || fallbackMessage;
@@ -148,18 +152,25 @@ export const useADM005 = () => {
     setServerErrorMessage(''); // Reset thông báo lỗi
 
     try {
-      const response = await employeeApi.addEmployee(storedEmployeeData.formData);
+      const { formData, mode } = storedEmployeeData;
+      const response =
+        mode === 'edit'
+          ? await employeeApi.updateEmployee(formData)
+          : await employeeApi.addEmployee(formData);
 
       if (response.code === '200') {
         clearEmployeeFormDataStorage();
-        router.push('/employees/adm006');
+        // Lấy thông điệp thành công dựa trên mã trả về từ API (MSG001 hoặc MSG002)
+        const successMsgCode = response.message.code;
+        const successMsg = getErrorMessage(successMsgCode, '');
+        router.push(`/employees/adm006?msg=${encodeURIComponent(successMsg)}`);
       } else {
         // Có lỗi từ Backend (Lỗi nghiệp vụ hoặc mã lỗi ERxxx)
-        const errorMessage = getErrorMessage(response.code, response.message || 'Đã xảy ra lỗi khi lưu nhân viên.');
+        const errorMessage = getErrorMessage(response.code, response.message?.code ? getErrorMessage(response.message.code, response.message.code) : Messages.MSG_ERROR_SAVE_EMPLOYEE);
         setServerErrorMessage(errorMessage);
       }
     } catch (error) {
-      setServerErrorMessage(MessageCode.ER015); // Lỗi hệ thống
+      setServerErrorMessage(Messages.MSG_ERROR_SYSTEM); // Lỗi hệ thống
     } finally {
       setIsSubmitting(false);
     }

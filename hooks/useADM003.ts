@@ -1,6 +1,6 @@
 /**
- * Copyright(C) 2026 Luvina
- * [useADM003.ts], 26/04/2026 tranledat
+ * Copyright(C) [2026] - Luvina
+ * [useADM003.ts], 28/04/2026 tranledat
  */
 "use client";
 
@@ -8,10 +8,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { employeeApi } from "@/lib/api/employee";
 import { EmployeeDetailResponse } from "@/types/employee";
+import * as Messages from "@/constants/messages";
 
 /**
  * Hook xử lý logic cho màn hình chi tiết nhân viên (ADM003).
- * @returns Các trạng thái và hàm xử lý cho ADM003
+ * @author tranledat
  */
 export const useADM003 = () => {
   const searchParams = useSearchParams();
@@ -28,9 +29,9 @@ export const useADM003 = () => {
    * Sử dụng employeeId lấy từ URL để truy vấn dữ liệu.
    */
   const fetchEmployeeDetail = useCallback(async () => {
+    // Nếu không có employeeId trong URL, chuyển sang màn hình lỗi hệ thống
     if (!employeeId) {
-      setErrorMessage("無効な社員IDです。");
-      setIsLoading(false);
+      router.push(`/employees/systemError?msg=${encodeURIComponent(Messages.MSG_INVALID_EMPLOYEE_ID)}`);
       return;
     }
 
@@ -40,15 +41,13 @@ export const useADM003 = () => {
       setEmployee(data);
     } catch (error: any) {
       console.error("Error fetching employee detail:", error);
-      if (error.response?.data?.message) {
-        setErrorMessage(error.response.data.message);
-      } else {
-        setErrorMessage("システムエラーが発生しました。");
-      }
+      // Chuyển hướng sang màn hình lỗi hệ thống khi có lỗi từ server kèm message
+      const errorMsg = error.response?.data?.message || Messages.MSG_ERROR_SERVER_CONNECTION;
+      router.push(`/employees/systemError?msg=${encodeURIComponent(errorMsg)}`);
     } finally {
       setIsLoading(false);
     }
-  }, [employeeId]);
+  }, [employeeId, router]);
 
   useEffect(() => {
     void fetchEmployeeDetail();
@@ -61,13 +60,16 @@ export const useADM003 = () => {
   const handleDelete = async () => {
     if (!employeeId) return;
 
-    if (confirm("削除しますが、よろしいですか？")) {
+    if (confirm(Messages.MSG_CONFIRM_DELETE)) {
       try {
-        await employeeApi.deleteEmployee(employeeId);
-        router.push("/employees/adm002");
+        const response = await employeeApi.deleteEmployee(employeeId);
+        // TH API trả về trạng thái thành công: di chuyển sang MH complete với mã message được trả về từ API
+        router.push(`/employees/adm006?msg=${encodeURIComponent(response.message || "")}`); 
       } catch (error: any) {
         console.error("Error deleting employee:", error);
-        alert("削除に失敗しました。");
+        // TH API trả về lỗi hiển thị ở màn SystemError với mã message lấy từ API
+        const errorMsg = error.response?.data?.message || Messages.MSG_ERROR_DELETE_FAILED;
+        router.push(`/employees/systemError?msg=${encodeURIComponent(errorMsg)}`);
       }
     }
   };

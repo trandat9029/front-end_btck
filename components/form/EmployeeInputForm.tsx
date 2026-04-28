@@ -16,6 +16,7 @@ function EmployeeInputForm() {
     formData,
     isCertificationSelected,
     errors,
+    mode,
     handleFieldChange,
     handleFieldBlur,
     handleDateChange,
@@ -38,7 +39,7 @@ function EmployeeInputForm() {
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">
             <i className="relative">
-              アカウント名:<span className="note-red">*</span>
+              アカウント名:{mode === 'add' && <span className="note-red">*</span>}
             </i>
           </label>
           <div className="col-sm col-sm-10">
@@ -51,6 +52,7 @@ function EmployeeInputForm() {
                 handleFieldChange('employeeLoginId', event.target.value)
               }
               onBlur={() => handleFieldBlur('employeeLoginId')}
+              disabled={mode === 'edit'}
             />
             {/* Nếu Zod bắt được lỗi ở trường này, errors.employeeLoginId sẽ có giá trị và hiển thị message lỗi màu đỏ */}
             {errors.employeeLoginId && <div className="text-danger mt-1 error-message">{errors.employeeLoginId.message}</div>}
@@ -198,7 +200,7 @@ function EmployeeInputForm() {
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">
             <i className="relative">
-              パスワード:<span className="note-red">*</span>
+              パスワード:{mode === 'add' && <span className="note-red">*</span>}
             </i>
           </label>
           <div className="col-sm col-sm-10">
@@ -210,6 +212,8 @@ function EmployeeInputForm() {
                 handleFieldChange('employeeLoginPassword', event.target.value)
               }
               onBlur={() => handleFieldBlur('employeeLoginPassword')}
+              disabled={mode === 'edit'}
+              placeholder={mode === 'edit' ? '********' : ''}
             />
             {errors.employeeLoginPassword && <div className="text-danger mt-1 error-message">{errors.employeeLoginPassword.message}</div>}
           </div>
@@ -229,6 +233,8 @@ function EmployeeInputForm() {
                 handleFieldChange('employeeLoginPasswordConfirm', event.target.value)
               }
               onBlur={() => handleFieldBlur('employeeLoginPasswordConfirm')}
+              disabled={mode === 'edit'}
+              placeholder={mode === 'edit' ? '********' : ''}
             />
             {errors.employeeLoginPasswordConfirm && <div className="text-danger mt-1 error-message">{errors.employeeLoginPasswordConfirm.message}</div>}
           </div>

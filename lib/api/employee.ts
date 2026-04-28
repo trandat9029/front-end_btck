@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from './client';
-import { EmployeeDetailResponse, EmployeeFormData, EmployeeListApiResponse, GetEmployeesParams } from '@/types/employee';
+import { EmployeeDetailResponse, EmployeeFormData, EmployeeListApiResponse, EmployeeUpdateApiResponse, GetEmployeesParams } from '@/types/employee';
 
 /**
  * Các phương thức gọi API liên quan đến nhân viên.
@@ -57,9 +57,25 @@ export const employeeApi = {
    */
   addEmployee: async (
     formData: EmployeeFormData
-  ): Promise<EmployeeListApiResponse> => {
-    const response = await apiClient.post<EmployeeListApiResponse>(
+  ): Promise<EmployeeUpdateApiResponse> => {
+    const response = await apiClient.post<EmployeeUpdateApiResponse>(
       '/employees',
+      formData
+    );
+    return response.data;
+  },
+
+  /**
+   * Gọi API thực hiện cập nhật nhân viên cho ADM005.
+   * @param formData Dữ liệu nhân viên cần cập nhật
+   * @return Kết quả thực hiện cập nhật
+   */
+  updateEmployee: async (
+    formData: EmployeeFormData
+  ): Promise<EmployeeUpdateApiResponse> => {
+    // Lấy ID nhân viên từ formData hoặc storage nếu cần, ở đây giả định có sẵn trong formData
+    const response = await apiClient.put<EmployeeUpdateApiResponse>(
+      `/employees/${formData.employeeId}`,
       formData
     );
     return response.data;

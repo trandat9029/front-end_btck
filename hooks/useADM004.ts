@@ -18,6 +18,7 @@ import { Certification } from '@/types/certifications';
 import { Department } from '@/types/department';
 import { EmployeeFormData, EmployeeFormMode } from '@/types/employee';
 import { employeeApi } from '@/lib/api/employee';
+import * as Messages from '@/constants/messages';
 import {
   createEmptyEmployeeFormData,
   createEmployeeFormDataStorage,
@@ -101,13 +102,13 @@ export const useADM004 = () => {
         if (deptRes.code === '200') {
           setDepartments(deptRes.departments);
         } else {
-          setDepartmentErrorMessage(deptRes.message || 'Không thể tải phòng ban');
+          setDepartmentErrorMessage(deptRes.message || Messages.MSG_ERROR_FETCH_DEPARTMENTS);
         }
 
         if (certRes.code === '200') {
           setCertifications(certRes.certifications);
         } else {
-          setCertificationErrorMessage(certRes.message || 'Không thể tải chứng chỉ');
+          setCertificationErrorMessage(certRes.message || Messages.MSG_ERROR_FETCH_CERTIFICATIONS);
         }
 
         // 3. Xác định Dữ liệu Form ban đầu
@@ -118,7 +119,35 @@ export const useADM004 = () => {
           // Quay lại từ màn Confirm -> Lấy dữ liệu đã lưu
           initialData = savedData.formData;
         } else if (mode === EDIT && employeeId) {
-          // TODO: Gọi API lấy chi tiết nhân viên nếu cần
+          // Vào từ màn ADM003 -> Gọi API lấy chi tiết nhân viên
+          try {
+            const employeeDetail = await employeeApi.getEmployeeById(employeeId);
+            if (employeeDetail) {
+              // Ánh xạ từ Response sang FormData
+              const cert = employeeDetail.certifications?.[0]; // Lấy chứng chỉ đầu tiên (theo yêu cầu bài tập)
+              initialData = {
+                employeeId: employeeDetail.employeeId,
+                employeeName: employeeDetail.employeeName,
+                employeeNameKana: employeeDetail.employeeNameKana,
+                employeeBirthDate: employeeDetail.employeeBirthDate,
+                employeeEmail: employeeDetail.employeeEmail,
+                employeeTelephone: employeeDetail.employeeTelephone,
+                employeeLoginId: employeeDetail.employeeLoginId,
+                employeeLoginPassword: '', // Password để trống khi edit trừ khi muốn đổi
+                employeeLoginPasswordConfirm: '',
+                departmentId: String(employeeDetail.departmentId),
+                certificationId: cert ? String(cert.certificationId) : '',
+                certificationStartDate: cert ? cert.startDate : '',
+                certificationEndDate: cert ? cert.endDate : '',
+                employeeCertificationScore: cert ? String(cert.score) : '',
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching employee detail for edit:', error);
+            // Có thể redirect sang trang lỗi nếu không tìm thấy nhân viên
+            router.push(`/employees/systemError?msg=${encodeURIComponent(Messages.MSG_INVALID_EMPLOYEE_ID)}`);
+            return;
+          }
         } else if (!isBack && !savedData) {
           // Chỉ xóa nếu là vào mới hoàn toàn và không có dữ liệu đệm
           clearEmployeeFormDataStorage();
@@ -223,14 +252,14 @@ export const useADM004 = () => {
         if (response.fieldErrors && response.fieldErrors.length > 0) {
           return response.fieldErrors as { field: string; message: string }[];
         }
-        return [{ field: 'employeeLoginId', message: response.message || 'Xác thực thất bại.' }];
+        return [{ field: 'employeeLoginId', message: response.message || Messages.MSG_ERROR_VALIDATE_FAILED }];
       }
 
       return [];
     } catch (error) {
       return [{
         field: 'employeeLoginId',
-        message: error instanceof Error ? error.message : 'Đã xảy ra lỗi hệ thống.'
+        message: error instanceof Error ? error.message : Messages.MSG_ERROR_SYSTEM
       }];
     }
   }, [formData]);
@@ -313,6 +342,7 @@ export const useADM004 = () => {
     register,
 
     // Hàm xử lý (Handlers)
+    mode,
     handleFieldChange,
     handleFieldBlur,
     handleDateChange,

@@ -1,17 +1,10 @@
 import { z } from 'zod';
 import {
-  ER001,
-  ER002,
-  ER005,
-  ER006,
-  ER007,
-  ER008,
-  ER009,
   ER012,
   ER017,
-  ER018,
   ER019,
 } from '@/constants/messageCode';
+import * as Messages from '@/constants/messages';
 
 /**
  * Validate tên nhân viên trong form tìm kiếm ADM002.
@@ -38,26 +31,22 @@ export function sanitizeEmployeeNameInput(value: string): string {
 export const employeeSchema = z
   .object({
     // 1.1 Validate parameter [employeeLoginId] (Tên tài khoản)
-    // - min(1): Kiểm tra bắt buộc nhập (lỗi ER001)
-    // - max(50): Giới hạn độ dài tối đa 50 ký tự (lỗi ER006)
-    // - regex(...): Chỉ cho phép ký tự a-z, A-Z, 0-9, dấu '_', và không được bắt đầu bằng số (lỗi ER019)
     employeeLoginId: z
       .string()
-      .min(1, ER001.replace('「画面項目名」', 'アカウント名'))
-      .max(50, ER006.replace('xxxx', '50').replace('「画面項目名」', 'アカウント名'))
+      .min(1, Messages.VALIDATE_LOGIN_ID_REQUIRED)
+      .max(50, Messages.VALIDATE_LOGIN_ID_MAX)
       .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, ER019),
 
     // 1.2 Validate parameter [departmentId] (Phòng ban/Nhóm)
-    // - min(1): Kiểm tra bắt buộc chọn (lỗi ER002)
-    departmentId: z.string().min(1, ER002.replace('「画面項目名」', 'グループ')),
+    departmentId: z.string().min(1, Messages.VALIDATE_GROUP_REQUIRED),
 
     // 1.2 Validate parameter [employeeName] (Họ tên)
     // - min(1): Kiểm tra bắt buộc nhập (lỗi ER001)
     // - max(125): Giới hạn độ dài tối đa 125 ký tự (lỗi ER006)
     employeeName: z
       .string()
-      .min(1, ER001.replace('「画面項目名」', '氏名'))
-      .max(125, ER006.replace('xxxx', '125').replace('「画面項目名」', '氏名')),
+      .min(1, Messages.VALIDATE_NAME_REQUIRED)
+      .max(125, Messages.VALIDATE_NAME_MAX),
 
     // 1.3 Validate parameter [employeeNameKana] (Họ tên Katakana)
     // - min(1): Bắt buộc nhập (lỗi ER001)
@@ -65,13 +54,12 @@ export const employeeSchema = z
     // - regex(...): Chỉ cho phép các ký tự Katakana toàn góc (ァ-ン, ヴ, ー) (lỗi ER009)
     employeeNameKana: z
       .string()
-      .min(1, ER001.replace('「画面項目名」', 'カタカナ氏名'))
-      .max(125, ER006.replace('xxxx', '125').replace('「画面項目名」', 'カタカナ氏名'))
-      .regex(/^[\uFF61-\uFF9F]+$/, ER009.replace('「画面項目名」', 'カタカナ氏名')),
+      .min(1, Messages.VALIDATE_KANA_REQUIRED)
+      .max(125, Messages.VALIDATE_KANA_MAX)
+      .regex(/^[\uFF61-\uFF9F]+$/, Messages.VALIDATE_KANA_FORMAT),
 
     // 1.4 Validate parameter [employeeBirthDate] (Ngày sinh)
-    // - min(1): Kiểm tra bắt buộc nhập (lỗi ER001)
-    employeeBirthDate: z.string().min(1, ER001.replace('「画面項目名」', '生年月日')),
+    employeeBirthDate: z.string().min(1, Messages.VALIDATE_BIRTH_DATE_REQUIRED),
 
     // 1.5 Validate parameter [employeeEmail] (Địa chỉ Email)
     // - min(1): Bắt buộc nhập (lỗi ER001)
@@ -79,9 +67,9 @@ export const employeeSchema = z
     // - email(): Kiểm tra đúng định dạng email (lỗi ER005)
     employeeEmail: z
       .string()
-      .min(1, ER001.replace('「画面項目名」', 'メールアドレス'))
-      .max(125, ER006.replace('xxxx', '125').replace('「画面項目名」', 'メールアドレス'))
-      .email(ER005.replace('「画面項目名」', 'メールアドレス').replace('xxx', 'メールアドレス')),
+      .min(1, Messages.VALIDATE_EMAIL_REQUIRED)
+      .max(125, Messages.VALIDATE_EMAIL_MAX)
+      .email(Messages.VALIDATE_EMAIL_FORMAT),
 
     // 1.6 Validate parameter [employeeTelephone] (Số điện thoại)
     // - min(1): Bắt buộc nhập (lỗi ER001)
@@ -89,43 +77,56 @@ export const employeeSchema = z
     // - regex(...): Chỉ cho phép ký tự 1 byte  (lỗi ER008)
     employeeTelephone: z
       .string()
-      .min(1, ER001.replace('「画面項目名」', '電話番号'))
-      .max(50, ER006.replace('xxxx', '50').replace('「画面項目名」', '電話番号'))
-      .regex(/^[\x20-\x7E]+$/, ER008.replace('「画面項目名」', '電話番号')),
+      .min(1, Messages.VALIDATE_TEL_REQUIRED)
+      .max(50, Messages.VALIDATE_TEL_MAX)
+      .regex(/^[\x20-\x7E]+$/, Messages.VALIDATE_TEL_FORMAT),
 
     // 1.7 Validate parameter [employeeLoginPassword] (Mật khẩu)
-    // - min(1): Bắt buộc nhập (lỗi ER001)
-    // - min(8): Tối thiểu 8 ký tự (lỗi ER007)
-    // - max(50): Tối đa 50 ký tự (lỗi ER007)
     employeeLoginPassword: z
       .string()
-      .min(1, ER001.replace('「画面項目名」', 'パスワード'))
-      .min(
-        8,
-        ER007.replace('「画面項目名」', 'パスワード').replace('xxx', '8').replace('xxx', '50')
-      )
-      .max(
-        50,
-        ER007.replace('「画面項目名」', 'パスワード').replace('xxx', '8').replace('xxx', '50')
-      ),
+      .max(50, Messages.VALIDATE_PASSWORD_LENGTH),
 
     // 1.8 Validate parameter [employeeLoginRePassword] (Xác nhận mật khẩu)
-    // - min(1): Bắt buộc nhập (lỗi ER001)
     employeeLoginPasswordConfirm: z
-      .string()
-      .min(1, ER001.replace('「画面項目名」', 'パスワード（確認）')),
+      .string(),
 
     // Các trường của phần Tiếng Nhật 
     // Đây là optional (có thể không chọn)
+    employeeId: z.number().optional(),
     certificationId: z.string().optional(),
     certificationStartDate: z.string().optional(),
     certificationEndDate: z.string().optional(),
     employeeCertificationScore: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    // 1.7.1 Kiểm tra Mật khẩu bắt buộc và độ dài nếu là chế độ THÊM MỚI (không có employeeId)
+    if (!data.employeeId) {
+      if (!data.employeeLoginPassword) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: Messages.VALIDATE_PASSWORD_REQUIRED,
+          path: ['employeeLoginPassword'],
+        });
+      } else if (data.employeeLoginPassword.length < 8) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: Messages.VALIDATE_PASSWORD_LENGTH,
+          path: ['employeeLoginPassword'],
+        });
+      }
+
+      if (!data.employeeLoginPasswordConfirm) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: Messages.VALIDATE_RE_PASSWORD_REQUIRED,
+          path: ['employeeLoginPasswordConfirm'],
+        });
+      }
+    }
+
     // 1.8 Kiểm tra xem Mật khẩu và Xác nhận Mật khẩu có khớp nhau không
-    // Nếu không khớp -> Báo lỗi ER017 ở trường employeeLoginPasswordConfirm
-    if (data.employeeLoginPassword !== data.employeeLoginPasswordConfirm) {
+    // Nếu có nhập mật khẩu (thêm mới hoặc muốn đổi) thì mới check khớp
+    if (data.employeeLoginPassword && data.employeeLoginPassword !== data.employeeLoginPasswordConfirm) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: ER017,
@@ -141,7 +142,7 @@ export const employeeSchema = z
       if (!data.certificationStartDate) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: ER001.replace('「画面項目名」', '資格交付日'),
+          message: Messages.VALIDATE_CERT_START_DATE_REQUIRED,
           path: ['certificationStartDate'],
         });
       }
@@ -151,7 +152,7 @@ export const employeeSchema = z
       if (!data.certificationEndDate) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: ER001.replace('「画面項目名」', '失効日'),
+          message: Messages.VALIDATE_CERT_END_DATE_REQUIRED,
           path: ['certificationEndDate'],
         });
       }
@@ -177,13 +178,13 @@ export const employeeSchema = z
       if (!data.employeeCertificationScore) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: ER001.replace('「画面項目名」', '点数'),
+          message: Messages.VALIDATE_SCORE_REQUIRED,
           path: ['employeeCertificationScore'],
         });
       } else if (!/^\d+$/.test(data.employeeCertificationScore)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: ER018.replace('「画面上の項目名」', '点数'),
+          message: Messages.VALIDATE_SCORE_FORMAT,
           path: ['employeeCertificationScore'],
         });
       }

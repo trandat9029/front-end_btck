@@ -156,3 +156,11 @@ export interface EmployeeDetailResponse {
   certifications: EmployeeCertificationDetail[];
 }
 
+export interface EmployeeUpdateApiResponse {
+  code: string;
+  employeeId: number;
+  message: {
+    code: string;
+    params: string[];
+  };
+}
