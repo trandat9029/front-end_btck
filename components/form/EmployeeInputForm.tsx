@@ -197,48 +197,48 @@ function EmployeeInputForm() {
         </li>
 
         {/* Mật khẩu */}
-        <li className="form-group row d-flex">
-          <label className="col-form-label col-sm-2">
-            <i className="relative">
-              パスワード:{mode === 'add' && <span className="note-red">*</span>}
-            </i>
-          </label>
-          <div className="col-sm col-sm-10">
-            <input
-              type="password"
-              className="form-control"
-              value={formData.employeeLoginPassword}
-              onChange={(event) =>
-                handleFieldChange('employeeLoginPassword', event.target.value)
-              }
-              onBlur={() => handleFieldBlur('employeeLoginPassword')}
-              disabled={mode === 'edit'}
-              placeholder={mode === 'edit' ? '********' : ''}
-            />
-            {errors.employeeLoginPassword && <div className="text-danger mt-1 error-message">{errors.employeeLoginPassword.message}</div>}
-          </div>
-        </li>
+        {mode === 'add' && (
+          <li className="form-group row d-flex">
+            <label className="col-form-label col-sm-2">
+              <i className="relative">
+                パスワード:<span className="note-red">*</span>
+              </i>
+            </label>
+            <div className="col-sm col-sm-10">
+              <input
+                type="password"
+                className="form-control"
+                value={formData.employeeLoginPassword}
+                onChange={(event) =>
+                  handleFieldChange('employeeLoginPassword', event.target.value)
+                }
+                onBlur={() => handleFieldBlur('employeeLoginPassword')}
+              />
+              {errors.employeeLoginPassword && <div className="text-danger mt-1 error-message">{errors.employeeLoginPassword.message}</div>}
+            </div>
+          </li>
+        )}
 
         {/* Xác nhận mật khẩu */}
-        <li className="form-group row d-flex">
-          <label className="col-form-label col-sm-2">
-            <i className="relative">パスワード（確認）:</i>
-          </label>
-          <div className="col-sm col-sm-10">
-            <input
-              type="password"
-              className="form-control"
-              value={formData.employeeLoginPasswordConfirm}
-              onChange={(event) =>
-                handleFieldChange('employeeLoginPasswordConfirm', event.target.value)
-              }
-              onBlur={() => handleFieldBlur('employeeLoginPasswordConfirm')}
-              disabled={mode === 'edit'}
-              placeholder={mode === 'edit' ? '********' : ''}
-            />
-            {errors.employeeLoginPasswordConfirm && <div className="text-danger mt-1 error-message">{errors.employeeLoginPasswordConfirm.message}</div>}
-          </div>
-        </li>
+        {mode === 'add' && (
+          <li className="form-group row d-flex">
+            <label className="col-form-label col-sm-2">
+              <i className="relative">パスワード（確認）:</i>
+            </label>
+            <div className="col-sm col-sm-10">
+              <input
+                type="password"
+                className="form-control"
+                value={formData.employeeLoginPasswordConfirm}
+                onChange={(event) =>
+                  handleFieldChange('employeeLoginPasswordConfirm', event.target.value)
+                }
+                onBlur={() => handleFieldBlur('employeeLoginPasswordConfirm')}
+              />
+              {errors.employeeLoginPasswordConfirm && <div className="text-danger mt-1 error-message">{errors.employeeLoginPasswordConfirm.message}</div>}
+            </div>
+          </li>
+        )}
         <li className="title mt-12">
           <a href="#!">日本語能力</a>
         </li>

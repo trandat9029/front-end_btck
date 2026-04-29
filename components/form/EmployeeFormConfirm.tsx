@@ -14,7 +14,7 @@ import { useADM005 } from '@/hooks/useADM005';
  */
 function EmployeeFormConfirm() {
   const {
-    storedEmployeeData,
+    storedSessionData,
     departmentName,
     certificationName,
     isSubmitting,
@@ -24,12 +24,12 @@ function EmployeeFormConfirm() {
   } = useADM005();
 
   // Nếu chưa có dữ liệu , không render gì cả
-  if (!storedEmployeeData) {
+  if (!storedSessionData) {
     return null;
   }
 
   // Kiểm tra xem người dùng có chọn chứng chỉ nào không
-  const hasCertification = !!storedEmployeeData.formData.certificationId;
+  const hasCertification = !!storedSessionData.formData.certificationId;
 
   return (
     <form className="c-form box-shadow">
@@ -43,7 +43,7 @@ function EmployeeFormConfirm() {
 
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">アカウント名</label>
-          <div className="col-sm col-sm-10">{storedEmployeeData.formData.employeeLoginId}</div>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.employeeLoginId}</div>
         </li>
 
         <li className="form-group row d-flex">
@@ -53,27 +53,27 @@ function EmployeeFormConfirm() {
 
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">氏名</label>
-          <div className="col-sm col-sm-10">{storedEmployeeData.formData.employeeName}</div>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.employeeName}</div>
         </li>
 
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">カナ氏名</label>
-          <div className="col-sm col-sm-10">{storedEmployeeData.formData.employeeNameKana}</div>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.employeeNameKana}</div>
         </li>
 
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">生年月日</label>
-          <div className="col-sm col-sm-10">{storedEmployeeData.formData.employeeBirthDate}</div>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.employeeBirthDate}</div>
         </li>
 
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">メールアドレス</label>
-          <div className="col-sm col-sm-10">{storedEmployeeData.formData.employeeEmail}</div>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.employeeEmail}</div>
         </li>
 
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">電話番号</label>
-          <div className="col-sm col-sm-10">{storedEmployeeData.formData.employeeTelephone}</div>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.employeeTelephone}</div>
         </li>
 
         {/* Chỉ hiển thị phần chứng chỉ nếu người dùng có chọn */}
@@ -88,15 +88,15 @@ function EmployeeFormConfirm() {
             </li>
             <li className="form-group row d-flex">
               <label className="col-form-label col-sm-2">資格交付日</label>
-              <div className="col-sm col-sm-10">{storedEmployeeData.formData.certificationStartDate}</div>
+              <div className="col-sm col-sm-10">{storedSessionData.formData.certificationStartDate}</div>
             </li>
             <li className="form-group row d-flex">
               <label className="col-form-label col-sm-2">失効日</label>
-              <div className="col-sm col-sm-10">{storedEmployeeData.formData.certificationEndDate}</div>
+              <div className="col-sm col-sm-10">{storedSessionData.formData.certificationEndDate}</div>
             </li>
             <li className="form-group row d-flex">
               <label className="col-form-label col-sm-2">点数</label>
-              <div className="col-sm col-sm-10">{storedEmployeeData.formData.employeeCertificationScore}</div>
+              <div className="col-sm col-sm-10">{storedSessionData.formData.employeeCertificationScore}</div>
             </li>
           </>
         )}

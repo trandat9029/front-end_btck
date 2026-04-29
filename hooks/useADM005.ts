@@ -18,6 +18,7 @@ import {
   clearEmployeeFormDataStorage,
   loadEmployeeFormDataStorage
 } from '@/lib/storage/employee';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 /**
  * Hook quản lý logic và hành vi cho màn hình xác nhận thông tin nhân viên (ADM005).
@@ -25,7 +26,7 @@ import {
  */
 export const useADM005 = () => {
   const router = useRouter();
-  const storedEmployeeData = useMemo(() => loadEmployeeFormDataStorage(), []);
+  const storedSessionData = useMemo(() => loadEmployeeFormDataStorage(), []);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,10 +36,10 @@ export const useADM005 = () => {
    * Điều hướng về màn nhập liệu nếu không có dữ liệu trong storage (truy cập trực tiếp URL).
    */
   useEffect(() => {
-    if (!storedEmployeeData) {
+    if (!storedSessionData) {
       router.replace('/employees/adm004');
     }
-  }, [storedEmployeeData, router]);
+  }, [storedSessionData, router]);
 
   /**
    * Load danh mục Master Data để hiển thị tên thay vì ID.
@@ -114,45 +115,45 @@ export const useADM005 = () => {
    * Lấy tên phòng ban từ ID đã lưu.
    */
   const departmentName = useMemo(() => {
-    if (!storedEmployeeData?.formData.departmentId) {
+    if (!storedSessionData?.formData.departmentId) {
       return '';
     }
 
     return (
       departments.find(
         (department) =>
-          String(department.department_id) === storedEmployeeData.formData.departmentId
+          String(department.department_id) === storedSessionData.formData.departmentId
       )?.department_name ?? ''
     );
-  }, [departments, storedEmployeeData]);
+  }, [departments, storedSessionData]);
 
   /**
    * Lấy tên chứng chỉ từ ID đã lưu.
    */
   const certificationName = useMemo(() => {
-    if (!storedEmployeeData?.formData.certificationId) {
+    if (!storedSessionData?.formData.certificationId) {
       return '';
     }
 
     return (
       certifications.find(
         (certification) =>
-          String(certification.certification_id) === storedEmployeeData.formData.certificationId
+          String(certification.certification_id) === storedSessionData.formData.certificationId
       )?.certification_name ?? ''
     );
-  }, [certifications, storedEmployeeData]);
+  }, [certifications, storedSessionData]);
 
   /**
    * Xử lý xác nhận lưu thông tin nhân viên vào Database.
    */
   const handleSubmit = useCallback(async () => {
-    if (!storedEmployeeData || isSubmitting) return;
+    if (!storedSessionData || isSubmitting) return;
 
     setIsSubmitting(true);
     setServerErrorMessage(''); // Reset thông báo lỗi
 
     try {
-      const { formData, mode } = storedEmployeeData;
+      const { formData, mode } = storedSessionData;
       const response =
         mode === 'edit'
           ? await employeeApi.updateEmployee(formData)
@@ -165,31 +166,34 @@ export const useADM005 = () => {
         const successMsg = getErrorMessage(successMsgCode, '');
         router.push(`/employees/adm006?msg=${encodeURIComponent(successMsg)}`);
       } else {
-        // Có lỗi từ Backend (Lỗi nghiệp vụ hoặc mã lỗi ERxxx)
-        const errorMessage = getErrorMessage(response.code, response.message?.code ? getErrorMessage(response.message.code, response.message.code) : Messages.MSG_ERROR_SAVE_EMPLOYEE);
-        setServerErrorMessage(errorMessage);
+        // Có lỗi nghiệp vụ từ Backend (mã lỗi ERxxx)
+        const errorMsg = extractErrorMessage(response, Messages.MSG_ERROR_SAVE_EMPLOYEE);
+        // Nếu extract được mã lỗi, thử map qua bảng thông báo tiếng Việt
+        setServerErrorMessage(getErrorMessage(errorMsg, errorMsg));
       }
-    } catch (error) {
-      setServerErrorMessage(Messages.MSG_ERROR_SYSTEM); // Lỗi hệ thống
+    } catch (error: any) {
+      console.error('Error saving employee:', error);
+      const errorMsg = extractErrorMessage(error.response?.data, Messages.MSG_ERROR_SYSTEM);
+      setServerErrorMessage(getErrorMessage(errorMsg, errorMsg));
     } finally {
       setIsSubmitting(false);
     }
-  }, [router, storedEmployeeData, isSubmitting]);
+  }, [router, storedSessionData, isSubmitting]);
 
   /**
    * Xử lý quay lại màn hình nhập liệu (ADM004).
    */
   const handleCancel = useCallback(() => {
-    if (storedEmployeeData?.mode === 'edit' && storedEmployeeData.employeeId) {
-      router.push(`/employees/adm004?id=${storedEmployeeData.employeeId}&mode=back`);
+    if (storedSessionData?.mode === 'edit' && storedSessionData.employeeId) {
+      router.push(`/employees/adm004?id=${storedSessionData.employeeId}&mode=back`);
       return;
     }
 
     router.push('/employees/adm004?mode=back');
-  }, [storedEmployeeData, router]);
+  }, [storedSessionData, router]);
 
   return {
-    storedEmployeeData,
+    storedSessionData,
     departmentName,
     certificationName,
     isSubmitting,

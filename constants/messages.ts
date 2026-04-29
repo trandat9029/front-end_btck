@@ -51,3 +51,6 @@ export const VALIDATE_CERT_END_DATE_REQUIRED = MessageCode.ER001.replace('「画
 
 export const VALIDATE_SCORE_REQUIRED = MessageCode.ER001.replace('「画面項目名」', '点数');
 export const VALIDATE_SCORE_FORMAT = MessageCode.ER018.replace('「画面上の項目名」', '点数');
+
+// Completion Page Messages
+export const MSG_SUCCESS_COMPLETED = 'ユーザの登録が完了しました。';

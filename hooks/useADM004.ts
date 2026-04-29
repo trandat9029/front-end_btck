@@ -26,6 +26,7 @@ import {
   saveEmployeeFormDataStorage,
   clearEmployeeFormDataStorage
 } from '@/lib/storage/employee';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 /**
  * Hook quản lý logic cho màn hình ADM004 (Đăng ký/Chỉnh sửa nhân viên).
@@ -111,20 +112,24 @@ export const useADM004 = () => {
           setCertificationErrorMessage(certRes.message || Messages.MSG_ERROR_FETCH_CERTIFICATIONS);
         }
 
-        // 3. Xác định Dữ liệu Form ban đầu
+        // 3. Xác định Dữ liệu Form ban đầu (Sử dụng cấu trúc ưu tiên rõ ràng)
         let initialData: EmployeeFormData = createEmptyEmployeeFormData();
-        const savedData = loadEmployeeFormDataStorage();
+        const storedSessionData = loadEmployeeFormDataStorage();
 
-        if (isBack && savedData?.formData) {
-          // Quay lại từ màn Confirm -> Lấy dữ liệu đã lưu
-          initialData = savedData.formData;
+        // Kiểm tra xem dữ liệu trong storage có khớp với ngữ cảnh hiện tại (ID và Mode) không
+        const isStorageMatched = storedSessionData && 
+                                storedSessionData.mode === mode && 
+                                storedSessionData.employeeId === employeeId;
+
+        if (isStorageMatched && (isBack || storedSessionData?.formData)) {
+          // TRƯỜNG HỢP 1: Ưu tiên dữ liệu từ Storage (do quay lại từ Confirm hoặc Reload trang)
+          initialData = storedSessionData.formData;
         } else if (mode === EDIT && employeeId) {
-          // Vào từ màn ADM003 -> Gọi API lấy chi tiết nhân viên
+          // TRƯỜNG HỢP 2: Chế độ Edit nhưng không có dữ liệu storage khớp -> Lấy từ API
           try {
             const employeeDetail = await employeeApi.getEmployeeById(employeeId);
             if (employeeDetail) {
-              // Ánh xạ từ Response sang FormData
-              const cert = employeeDetail.certifications?.[0]; // Lấy chứng chỉ đầu tiên (theo yêu cầu bài tập)
+              const cert = employeeDetail.certifications?.[0];
               initialData = {
                 employeeId: employeeDetail.employeeId,
                 employeeName: employeeDetail.employeeName,
@@ -133,7 +138,7 @@ export const useADM004 = () => {
                 employeeEmail: employeeDetail.employeeEmail,
                 employeeTelephone: employeeDetail.employeeTelephone,
                 employeeLoginId: employeeDetail.employeeLoginId,
-                employeeLoginPassword: '', // Password để trống khi edit trừ khi muốn đổi
+                employeeLoginPassword: '', 
                 employeeLoginPasswordConfirm: '',
                 departmentId: String(employeeDetail.departmentId),
                 certificationId: cert ? String(cert.certificationId) : '',
@@ -142,18 +147,17 @@ export const useADM004 = () => {
                 employeeCertificationScore: cert ? String(cert.score) : '',
               };
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error fetching employee detail for edit:', error);
-            // Có thể redirect sang trang lỗi nếu không tìm thấy nhân viên
-            router.push(`/employees/systemError?msg=${encodeURIComponent(Messages.MSG_INVALID_EMPLOYEE_ID)}`);
+            const errorMsg = extractErrorMessage(error.response?.data, Messages.MSG_INVALID_EMPLOYEE_ID);
+            router.push(`/employees/systemError?msg=${encodeURIComponent(errorMsg)}`);
             return;
           }
-        } else if (!isBack && !savedData) {
-          // Chỉ xóa nếu là vào mới hoàn toàn và không có dữ liệu đệm
+        } 
+        
+        // Cleanup storage nếu vào mới hoàn toàn (không phải quay lại và không có dữ liệu khớp)
+        if (!isBack && !isStorageMatched) {
           clearEmployeeFormDataStorage();
-        } else if (savedData?.formData) {
-          // Nếu có dữ liệu trong storage (do reload hoặc quay lại), ưu tiên dùng nó
-          initialData = savedData.formData;
         }
 
         // 4. Đồng bộ State và Hook Form
@@ -252,7 +256,8 @@ export const useADM004 = () => {
         if (response.fieldErrors && response.fieldErrors.length > 0) {
           return response.fieldErrors as { field: string; message: string }[];
         }
-        return [{ field: 'employeeLoginId', message: response.message || Messages.MSG_ERROR_VALIDATE_FAILED }];
+        const errorMsg = extractErrorMessage(response, Messages.MSG_ERROR_VALIDATE_FAILED);
+        return [{ field: 'employeeLoginId', message: errorMsg }];
       }
 
       return [];
@@ -319,12 +324,18 @@ export const useADM004 = () => {
    */
   const handleBack = useCallback(() => {
     clearFormData();
-    router.push(
-      returnQueryString
-        ? `/employees/adm002?${returnQueryString}`
-        : '/employees/adm002'
-    );
-  }, [clearFormData, router, returnQueryString]);
+    if (mode === 'edit' && employeeId) {
+      // Nếu là Edit, quay lại màn hình chi tiết ADM003
+      router.push(`/employees/adm003?id=${employeeId}`);
+    } else {
+      // Nếu là Add, quay lại màn hình danh sách ADM002
+      router.push(
+        returnQueryString
+          ? `/employees/adm002?${returnQueryString}`
+          : '/employees/adm002'
+      );
+    }
+  }, [clearFormData, router, returnQueryString, mode, employeeId]);
 
   return {
     // Dữ liệu (Data)

@@ -10,6 +10,7 @@ import {
   sanitizeEmployeeNameInput,
   validateEmployeeName,
 } from '@/lib/validation/employee';
+import { extractErrorMessage } from '@/lib/utils/error';
 import { Department } from '@/types/department';
 import {
   EmployeeListApiResponse,
@@ -143,14 +144,12 @@ export const useADM002 = () => {
         setTotalRecords(data.totalRecords ?? 0);
       } catch (error) {
         const apiError = error as AxiosError<EmployeeListApiResponse>;
-        const responseMessage = apiError.response?.data?.message;
+        const responseData = apiError.response?.data;
+        const responseMessage = extractErrorMessage(responseData, error instanceof Error ? error.message : 'Failed to load employees.');
 
         setEmployees([]);
         setTotalRecords(0);
-        setErrorMessage(
-          responseMessage ||
-            (error instanceof Error ? error.message : 'Failed to load employees.')
-        );
+        setErrorMessage(responseMessage);
       } finally {
         setIsLoading(false);
       }

@@ -9,6 +9,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { employeeApi } from "@/lib/api/employee";
 import { EmployeeDetailResponse } from "@/types/employee";
 import * as Messages from "@/constants/messages";
+import { extractErrorMessage } from "@/lib/utils/error";
 
 /**
  * Hook xử lý logic cho màn hình chi tiết nhân viên (ADM003).
@@ -42,7 +43,7 @@ export const useADM003 = () => {
     } catch (error: any) {
       console.error("Error fetching employee detail:", error);
       // Chuyển hướng sang màn hình lỗi hệ thống khi có lỗi từ server kèm message
-      const errorMsg = error.response?.data?.message || Messages.MSG_ERROR_SERVER_CONNECTION;
+      const errorMsg = extractErrorMessage(error.response?.data, Messages.MSG_ERROR_SERVER_CONNECTION);
       router.push(`/employees/systemError?msg=${encodeURIComponent(errorMsg)}`);
     } finally {
       setIsLoading(false);
@@ -68,7 +69,7 @@ export const useADM003 = () => {
       } catch (error: any) {
         console.error("Error deleting employee:", error);
         // TH API trả về lỗi hiển thị ở màn SystemError với mã message lấy từ API
-        const errorMsg = error.response?.data?.message || Messages.MSG_ERROR_DELETE_FAILED;
+        const errorMsg = extractErrorMessage(error.response?.data, Messages.MSG_ERROR_DELETE_FAILED);
         router.push(`/employees/systemError?msg=${encodeURIComponent(errorMsg)}`);
       }
     }

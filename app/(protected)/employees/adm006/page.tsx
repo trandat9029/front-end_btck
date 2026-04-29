@@ -2,12 +2,13 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
+import * as Messages from '@/constants/messages';
 
 export default function EmployeeCompletePage() {
   useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const message = searchParams.get('msg') || 'ユーザの登録が完了しました。';
+  const message = searchParams.get('msg') || Messages.MSG_SUCCESS_COMPLETED;
 
   return (
     <div className="box-shadow">
