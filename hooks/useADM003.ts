@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { employeeApi } from "@/lib/api/employee";
 import { EmployeeDetailResponse } from "@/types/employee";
@@ -20,6 +20,12 @@ export const useADM003 = () => {
   const router = useRouter();
   const employeeIdStr = searchParams.get("id");
   const employeeId = employeeIdStr ? parseInt(employeeIdStr) : null;
+
+  const returnQueryString = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('id');
+    return params.toString();
+  }, [searchParams]);
 
   const [employee, setEmployee] = useState<EmployeeDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +71,7 @@ export const useADM003 = () => {
       try {
         const response = await employeeApi.deleteEmployee(employeeId);
         // TH API trả về trạng thái thành công: di chuyển sang MH complete với mã message được trả về từ API
-        router.push(`/employees/adm006?msg=${encodeURIComponent(response.message || "")}`); 
+        router.push(`/employees/adm006?msg=${encodeURIComponent(response.message || "")}`);
       } catch (error: any) {
         console.error("Error deleting employee:", error);
         // TH API trả về lỗi hiển thị ở màn SystemError với mã message lấy từ API
@@ -81,14 +87,15 @@ export const useADM003 = () => {
    */
   const handleEdit = () => {
     if (!employeeId) return;
-    router.push(`/employees/adm004?id=${employeeId}&mode=edit`);
+    const query = returnQueryString ? `&${returnQueryString}` : "";
+    router.push(`/employees/adm004?id=${employeeId}&mode=edit${query}`);
   };
 
   /**
    * Hàm xử lý quay lại màn hình danh sách nhân viên (ADM002).
    */
   const handleBack = () => {
-    router.push("/employees/adm002");
+    router.push(returnQueryString ? `/employees/adm002?${returnQueryString}` : "/employees/adm002");
   };
 
   return {

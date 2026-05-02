@@ -5,6 +5,7 @@
 
 import { Fragment } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { EmployeeListItem, SortOrder } from "@/types/employee";
 
 interface Props {
@@ -38,6 +39,10 @@ export default function EmployeeTable({
   onSortChange,
   emptyMessage = "検索条件に該当するユーザが見つかりません。",
 }: Props) {
+  const searchParams = useSearchParams();
+  const queryString = searchParams.toString();
+  const getHref = (id: number) => `/employees/adm003?id=${id}${queryString ? `&${queryString}` : ''}`;
+
   const renderSortLabel = (label: string, sortOrder: SortOrder) => {
     return `${label} ${sortOrder === "asc" ? "▲▽" : "△▼"}`;
   };
@@ -88,12 +93,12 @@ export default function EmployeeTable({
                   }-${index}`}
               >
                 <div className="bor-l-none text-center">
-                  <Link href={`/employees/adm003?id=${e.employeeId}`} className="no-underline text-black hover-primary">
+                  <Link href={getHref(e.employeeId)} className="no-underline text-black hover-primary">
                     {e.employeeId}
                   </Link>
                 </div>
                 <div title={e.employeeName}>
-                  <Link href={`/employees/adm003?id=${e.employeeId}`} className="no-underline text-black hover-primary">
+                  <Link href={getHref(e.employeeId)} className="no-underline text-black hover-primary">
                     {e.employeeName}
                   </Link>
                 </div>
