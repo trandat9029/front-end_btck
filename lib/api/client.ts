@@ -34,6 +34,22 @@ export function setupInterceptors(client: ReturnType<typeof axios.create>) {
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
         }
+      } else if (error.response?.status === 500) {
+        if (typeof window !== 'undefined') {
+          const defaultMsg = 'システムエラーが発生しました。';
+          let errorMsg = defaultMsg;
+          
+          if (error.response?.data) {
+             const data = error.response.data;
+             if (Array.isArray(data) && data.length > 0 && data[0].message) {
+                 errorMsg = data[0].message;
+             } else if (typeof data === 'object' && data.message) {
+                 errorMsg = data.message;
+             }
+          }
+
+          window.location.href = `/employees/systemError?msg=${encodeURIComponent(errorMsg)}`;
+        }
       }
       return Promise.reject(error);
     }

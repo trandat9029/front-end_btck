@@ -38,14 +38,18 @@ export const employeeApi = {
   /**
    * Gọi API validate dữ liệu nhân viên cho ADM004.
    * @param formData Dữ liệu form nhân viên cần validate
+   * @param step Bước validate (input: từ form nhập liệu, all/undefined: toàn bộ)
    * @return Kết quả validate (200 OK hoặc mã lỗi kèm danh sách field lỗi)
    */
   validateEmployee: async (
-    formData: EmployeeFormData
+    formData: EmployeeFormData,
+    step?: string
   ): Promise<EmployeeListApiResponse> => {
+    const config = step ? { params: { step } } : undefined;
     const response = await apiClient.post<EmployeeListApiResponse>(
       '/employees/validate',
-      formData
+      formData,
+      config
     );
     return response.data;
   },

@@ -161,6 +161,7 @@ export interface EmployeeUpdateApiResponse {
   employeeId: number;
   message: {
     code: string;
+    message: string; // Thêm trường message từ backend
     params: string[];
   };
 }

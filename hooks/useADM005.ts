@@ -161,9 +161,8 @@ export const useADM005 = () => {
 
       if (response.code === '200') {
         clearEmployeeFormDataStorage();
-        // Lấy thông điệp thành công dựa trên mã trả về từ API (MSG001 hoặc MSG002)
-        const successMsgCode = response.message.code;
-        const successMsg = getErrorMessage(successMsgCode, '');
+        // Ưu tiên lấy message từ backend nếu có, nếu không thì tự dịch ở frontend
+        const successMsg = response.message.message || getErrorMessage(response.message.code, '');
         router.push(`/employees/adm006?msg=${encodeURIComponent(successMsg)}`);
       } else {
         // Có lỗi nghiệp vụ từ Backend (mã lỗi ERxxx)

@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { employeeSchema } from '@/lib/validation/employee';
-import { ADD, EDIT } from '@/constants/employee';
+import { ADD, EDIT, VALIDATE_STEP_INPUT } from '@/constants/employee';
 import { certificationApi } from '@/lib/api/certifications';
 import { departmentApi } from '@/lib/api/department';
 import { Certification } from '@/types/certifications';
@@ -250,7 +250,7 @@ export const useADM004 = () => {
    */
   const validateEmployee = useCallback(async (): Promise<{ field: string; message: string }[]> => {
     try {
-      const response = await employeeApi.validateEmployee(formData);
+      const response = await employeeApi.validateEmployee(formData, VALIDATE_STEP_INPUT);
 
       if (response.code !== '200') {
         if (response.fieldErrors && response.fieldErrors.length > 0) {
