@@ -7,15 +7,15 @@ import type { Department, DepartmentListResponse, NormalizedDepartmentListRespon
 function normalizeDepartments(payload: DepartmentListResponse): Department[] {
   if (Array.isArray(payload.departments)) {
     return payload.departments.map((department: any) => ({
-      department_id: department.departmentId,
-      department_name: department.departmentName,
+      departmentId: department.departmentId,
+      departmentName: department.departmentName,
     }));
   }
 
   if (Array.isArray(payload.data)) {
     return payload.data.map((department) => ({
-      department_id: department.departmentId,
-      department_name: department.departmentName,
+      departmentId: department.departmentId,
+      departmentName: department.departmentName,
     }));
   }
 

@@ -99,9 +99,7 @@ export default function EmployeeTable({
                   </Link>
                 </div>
                 <div title={e.employeeName}>
-                  <Link href={getHref(e.employeeId)} className="no-underline text-black hover-primary">
-                    {e.employeeName}
-                  </Link>
+                  {e.employeeName}
                 </div>
                 <div>{formatDateDisplay(e.employeeBirthDate)}</div>
                 <div>{e.departmentName}</div>

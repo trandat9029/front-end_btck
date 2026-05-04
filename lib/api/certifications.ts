@@ -10,15 +10,15 @@ import type {
 function normalizeCertifications(payload: CertificationListResponse): Certification[] {
   if (Array.isArray(payload.certifications)) {
     return payload.certifications.map((certification) => ({
-      certification_id: certification.certificationId,
-      certification_name: certification.certificationName,
+      certificationId: certification.certificationId,
+      certificationName: certification.certificationName,
     }));
   }
 
   if (Array.isArray(payload.data)) {
     return payload.data.map((certification: CertificationApiItem) => ({
-      certification_id: certification.certificationId,
-      certification_name: certification.certificationName,
+      certificationId: certification.certificationId,
+      certificationName: certification.certificationName,
     }));
   }
 

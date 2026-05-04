@@ -9,10 +9,8 @@ function EmployeeInputForm() {
   const {
     departments,
     isLoadingDepartments,
-    departmentErrorMessage,
     certifications,
     isLoadingCertifications,
-    certificationErrorMessage,
     formData,
     isCertificationSelected,
     errors,
@@ -24,7 +22,7 @@ function EmployeeInputForm() {
     handleBack,
   } = useADM004();
 
-  const getDateValue = (value: string) => {
+  const getDateValue = (value: string | undefined) => {
     if (!value) {
       return null;
     }
@@ -55,7 +53,7 @@ function EmployeeInputForm() {
               disabled={mode === 'edit'}
             />
             {/* Nếu Zod bắt được lỗi ở trường này, errors.employeeLoginId sẽ có giá trị và hiển thị message lỗi màu đỏ */}
-            {errors.employeeLoginId && <div className="text-danger mt-1 error-message">{errors.employeeLoginId.message}</div>}
+            {errors.employeeLoginId && <div className="error-message mt-1">{errors.employeeLoginId.message}</div>}
           </div>
         </li>
 
@@ -79,17 +77,14 @@ function EmployeeInputForm() {
               <option value="">選択してください</option>
               {departments.map((department) => (
                 <option
-                  key={department.department_id}
-                  value={String(department.department_id)}
+                  key={department.departmentId}
+                  value={String(department.departmentId)}
                 >
-                  {department.department_name}
+                  {department.departmentName}
                 </option>
               ))}
             </select>
-            {departmentErrorMessage && (
-              <div className="text-danger mt-1">{departmentErrorMessage}</div>
-            )}
-            {errors.departmentId && <div className="text-danger mt-1 error-message">{errors.departmentId.message}</div>}
+            {errors.departmentId && <div className="error-message mt-1">{errors.departmentId.message}</div>}
           </div>
         </li>
 
@@ -108,7 +103,7 @@ function EmployeeInputForm() {
               onChange={(event) => handleFieldChange('employeeName', event.target.value)}
               onBlur={() => handleFieldBlur('employeeName')}
             />
-            {errors.employeeName && <div className="text-danger mt-1 error-message">{errors.employeeName.message}</div>}
+            {errors.employeeName && <div className="error-message mt-1">{errors.employeeName.message}</div>}
           </div>
         </li>
 
@@ -129,7 +124,7 @@ function EmployeeInputForm() {
               }
               onBlur={() => handleFieldBlur('employeeNameKana')}
             />
-            {errors.employeeNameKana && <div className="text-danger mt-1 error-message">{errors.employeeNameKana.message}</div>}
+            {errors.employeeNameKana && <div className="error-message mt-1">{errors.employeeNameKana.message}</div>}
           </div>
         </li>
 
@@ -144,7 +139,7 @@ function EmployeeInputForm() {
             <div className="datepicker-wrapper">
               <DatePicker
                 selected={getDateValue(formData.employeeBirthDate)}
-                onChange={(date) => handleDateChange('employeeBirthDate', date)}
+                onChange={(date: Date | null) => handleDateChange('employeeBirthDate', date)}
                 onBlur={() => handleFieldBlur('employeeBirthDate')}
                 dateFormat="yyyy-MM-dd"
                 className="form-control"
@@ -152,7 +147,7 @@ function EmployeeInputForm() {
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
-            {errors.employeeBirthDate && <div className="text-danger mt-1 error-message">{errors.employeeBirthDate.message}</div>}
+            {errors.employeeBirthDate && <div className="error-message mt-1">{errors.employeeBirthDate.message}</div>}
           </div>
         </li>
 
@@ -171,7 +166,7 @@ function EmployeeInputForm() {
               onChange={(event) => handleFieldChange('employeeEmail', event.target.value)}
               onBlur={() => handleFieldBlur('employeeEmail')}
             />
-            {errors.employeeEmail && <div className="text-danger mt-1 error-message">{errors.employeeEmail.message}</div>}
+            {errors.employeeEmail && <div className="error-message mt-1">{errors.employeeEmail.message}</div>}
           </div>
         </li>
 
@@ -192,7 +187,7 @@ function EmployeeInputForm() {
               }
               onBlur={() => handleFieldBlur('employeeTelephone')}
             />
-            {errors.employeeTelephone && <div className="text-danger mt-1 error-message">{errors.employeeTelephone.message}</div>}
+            {errors.employeeTelephone && <div className="error-message mt-1">{errors.employeeTelephone.message}</div>}
           </div>
         </li>
 
@@ -214,7 +209,7 @@ function EmployeeInputForm() {
                 }
                 onBlur={() => handleFieldBlur('employeeLoginPassword')}
               />
-              {errors.employeeLoginPassword && <div className="text-danger mt-1 error-message">{errors.employeeLoginPassword.message}</div>}
+              {errors.employeeLoginPassword && <div className="error-message mt-1">{errors.employeeLoginPassword.message}</div>}
             </div>
           </li>
         )}
@@ -235,7 +230,7 @@ function EmployeeInputForm() {
                 }
                 onBlur={() => handleFieldBlur('employeeLoginPasswordConfirm')}
               />
-              {errors.employeeLoginPasswordConfirm && <div className="text-danger mt-1 error-message">{errors.employeeLoginPasswordConfirm.message}</div>}
+              {errors.employeeLoginPasswordConfirm && <div className="error-message mt-1">{errors.employeeLoginPasswordConfirm.message}</div>}
             </div>
           </li>
         )}
@@ -261,17 +256,14 @@ function EmployeeInputForm() {
               <option value="">選択してください</option>
               {certifications.map((certification) => (
                 <option
-                  key={certification.certification_id}
-                  value={String(certification.certification_id)}
+                  key={certification.certificationId}
+                  value={String(certification.certificationId)}
                 >
-                  {certification.certification_name}
+                  {certification.certificationName}
                 </option>
               ))}
             </select>
-            {certificationErrorMessage && (
-              <div className="text-danger mt-1">{certificationErrorMessage}</div>
-            )}
-            {errors.certificationId && <div className="text-danger mt-1 error-message">{errors.certificationId.message}</div>}
+            {errors.certificationId && <div className="error-message mt-1">{errors.certificationId.message}</div>}
           </div>
         </li>
 
@@ -286,7 +278,7 @@ function EmployeeInputForm() {
             <div className="datepicker-wrapper">
               <DatePicker
                 selected={getDateValue(formData.certificationStartDate)}
-                onChange={(date) => handleDateChange('certificationStartDate', date)}
+                onChange={(date: Date | null) => handleDateChange('certificationStartDate', date)}
                 onBlur={() => handleFieldBlur('certificationStartDate')}
                 dateFormat="yyyy-MM-dd"
                 className="form-control"
@@ -295,7 +287,7 @@ function EmployeeInputForm() {
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
-            {errors.certificationStartDate && <div className="text-danger mt-1 error-message">{errors.certificationStartDate.message}</div>}
+            {errors.certificationStartDate && <div className="error-message mt-1">{errors.certificationStartDate.message}</div>}
           </div>
         </li>
 
@@ -310,7 +302,7 @@ function EmployeeInputForm() {
             <div className="datepicker-wrapper">
               <DatePicker
                 selected={getDateValue(formData.certificationEndDate)}
-                onChange={(date) => handleDateChange('certificationEndDate', date)}
+                onChange={(date: Date | null) => handleDateChange('certificationEndDate', date)}
                 onBlur={() => handleFieldBlur('certificationEndDate')}
                 dateFormat="yyyy-MM-dd"
                 className="form-control"
@@ -319,7 +311,7 @@ function EmployeeInputForm() {
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
-            {errors.certificationEndDate && <div className="text-danger mt-1 error-message">{errors.certificationEndDate.message}</div>}
+            {errors.certificationEndDate && <div className="error-message mt-1">{errors.certificationEndDate.message}</div>}
           </div>
         </li>
 
@@ -337,7 +329,7 @@ function EmployeeInputForm() {
               onBlur={() => handleFieldBlur('employeeCertificationScore')}
               disabled={!isCertificationSelected}
             />
-            {errors.employeeCertificationScore && <div className="text-danger mt-1 error-message">{errors.employeeCertificationScore.message}</div>}
+            {errors.employeeCertificationScore && <div className="error-message mt-1">{errors.employeeCertificationScore.message}</div>}
           </div>
         </li>
 

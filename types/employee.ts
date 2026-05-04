@@ -67,10 +67,16 @@ export interface EmployeeSearchParams {
   limit?: number;
 }
 
-// Kiểu sắp xếp tăng dần hoặc giảm dần
+/**
+ * Kiểu sắp xếp tăng dần hoặc giảm dần
+ * @author tranledat
+ */
 export type SortOrder = 'asc' | 'desc';
 
-// Một bản ghi nhân viên trả về từ API danh sách
+/**
+ * Một bản ghi nhân viên trả về từ API danh sách
+ * @author tranledat
+ */
 export interface EmployeeListItem {
   employeeId: number;
   employeeName: string;
@@ -83,22 +89,41 @@ export interface EmployeeListItem {
   score: number | null;
 }
 
+/**
+ * Thông tin lỗi của một trường dữ liệu từ Backend
+ * @author tranledat
+ */
 export interface FieldError {
   field: string;
   message: string;
 }
 
-// Dữ liệu phản hồi từ API lấy danh sách nhân viên
+/**
+ * Cấu trúc thông báo từ Backend (MessageResponse)
+ * @author tranledat
+ */
+export interface MessageResponse {
+  code: string;
+  params: string[];
+}
+
+/**
+ * Dữ liệu phản hồi từ API lấy danh sách nhân viên
+ * @author tranledat
+ */
 export interface EmployeeListApiResponse {
   code: string;
   totalRecords?: number;
   employees?: EmployeeListItem[];
-  message?: string;
+  message?: MessageResponse;
   params?: string[];
   fieldErrors?: FieldError[];
 }
 
-// Tham số gửi lên API để lấy danh sách nhân viên
+/**
+ * Tham số gửi lên API để lấy danh sách nhân viên
+ * @author tranledat
+ */
 export interface GetEmployeesParams {
   employeeName?: string;
   departmentId?: string;
@@ -109,6 +134,10 @@ export interface GetEmployeesParams {
   limit?: number;
 }
 
+/**
+ * Dữ liệu form nhân viên dùng cho việc thêm mới hoặc cập nhật
+ * @author tranledat
+ */
 export interface EmployeeFormData {
   employeeId?: number;
   employeeLoginId: string;
@@ -120,20 +149,32 @@ export interface EmployeeFormData {
   employeeTelephone: string;
   employeeLoginPassword: string;
   employeeLoginPasswordConfirm: string;
-  certificationId: string;
-  certificationStartDate: string;
-  certificationEndDate: string;
-  employeeCertificationScore: string;
+  certificationId?: string;
+  certificationStartDate?: string;
+  certificationEndDate?: string;
+  employeeCertificationScore?: string;
 }
 
+/**
+ * Chế độ của form nhân viên
+ * @author tranledat
+ */
 export type EmployeeFormMode = 'add' | 'edit';
 
+/**
+ * Cấu trúc lưu trữ dữ liệu form nhân viên trong sessionStorage
+ * @author tranledat
+ */
 export interface EmployeeFormDataStorage {
   formData: EmployeeFormData;
   mode: EmployeeFormMode;
   employeeId?: number;
 }
 
+/**
+ * Chi tiết chứng chỉ của nhân viên
+ * @author tranledat
+ */
 export interface EmployeeCertificationDetail {
   certificationId: number;
   certificationName: string;
@@ -142,6 +183,10 @@ export interface EmployeeCertificationDetail {
   score: number;
 }
 
+/**
+ * Dữ liệu phản hồi chi tiết một nhân viên từ API
+ * @author tranledat
+ */
 export interface EmployeeDetailResponse {
   code: string;
   employeeId: number;
@@ -156,12 +201,12 @@ export interface EmployeeDetailResponse {
   certifications: EmployeeCertificationDetail[];
 }
 
+/**
+ * Dữ liệu phản hồi từ API cập nhật nhân viên
+ * @author tranledat
+ */
 export interface EmployeeUpdateApiResponse {
   code: string;
   employeeId: number;
-  message: {
-    code: string;
-    message: string; // Thêm trường message từ backend
-    params: string[];
-  };
+  message: MessageResponse;
 }

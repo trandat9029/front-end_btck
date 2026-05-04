@@ -91,8 +91,8 @@ export const useADM005 = () => {
     return (
       departments.find(
         (department) =>
-          String(department.department_id) === storedSessionData.formData.departmentId
-      )?.department_name ?? ''
+          String(department.departmentId) === storedSessionData.formData.departmentId
+      )?.departmentName ?? ''
     );
   }, [departments, storedSessionData]);
 
@@ -107,8 +107,8 @@ export const useADM005 = () => {
     return (
       certifications.find(
         (certification) =>
-          String(certification.certification_id) === storedSessionData.formData.certificationId
-      )?.certification_name ?? ''
+          String(certification.certificationId) === storedSessionData.formData.certificationId
+      )?.certificationName ?? ''
     );
   }, [certifications, storedSessionData]);
 

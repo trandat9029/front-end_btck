@@ -16,7 +16,7 @@ import { certificationApi } from '@/lib/api/certifications';
 import { departmentApi } from '@/lib/api/department';
 import { Certification } from '@/types/certifications';
 import { Department } from '@/types/department';
-import { EmployeeFormData, EmployeeFormMode } from '@/types/employee';
+import { EmployeeFormData, EmployeeFormMode, MessageResponse } from '@/types/employee';
 import { employeeApi } from '@/lib/api/employee';
 import * as Messages from '@/constants/messages';
 import {
@@ -118,9 +118,9 @@ export const useADM004 = () => {
         const storedSessionData = loadEmployeeFormDataStorage();
 
         // Kiểm tra xem dữ liệu trong storage có khớp với ngữ cảnh hiện tại (ID và Mode) không
-        const isStorageMatched = storedSessionData && 
-                                storedSessionData.mode === mode && 
-                                storedSessionData.employeeId === employeeId;
+        const isStorageMatched = storedSessionData &&
+          storedSessionData.mode === mode &&
+          storedSessionData.employeeId === employeeId;
 
         if (isStorageMatched && (isBack || storedSessionData?.formData)) {
           // TRƯỜNG HỢP 1: Ưu tiên dữ liệu từ Storage (do quay lại từ Confirm hoặc Reload trang)
@@ -139,7 +139,7 @@ export const useADM004 = () => {
                 employeeEmail: employeeDetail.employeeEmail,
                 employeeTelephone: employeeDetail.employeeTelephone,
                 employeeLoginId: employeeDetail.employeeLoginId,
-                employeeLoginPassword: '', 
+                employeeLoginPassword: '',
                 employeeLoginPasswordConfirm: '',
                 departmentId: String(employeeDetail.departmentId),
                 certificationId: cert ? String(cert.certificationId) : '',
@@ -152,12 +152,17 @@ export const useADM004 = () => {
             console.error('Error fetching employee detail for edit:', error);
             const backendError = error.response?.data?.message;
             const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
+            const errorCode = backendError?.code || '';
+
             sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
+            if (errorCode) {
+              sessionStorage.setItem('SYSTEM_ERROR_CODE', errorCode);
+            }
             router.push('/employees/systemError');
             return;
           }
-        } 
-        
+        }
+
         // Cleanup storage nếu vào mới hoàn toàn (không phải quay lại và không có dữ liệu khớp)
         if (!isBack && !isStorageMatched) {
           clearEmployeeFormDataStorage();
@@ -219,11 +224,12 @@ export const useADM004 = () => {
     []
   );
 
+
   const selectedCertification = useMemo(
     () =>
       certifications.find(
         (certification) =>
-          String(certification.certification_id) === formData.certificationId
+          String(certification.certificationId) === formData.certificationId
       ) ?? null,
     [certifications, formData.certificationId]
   );
@@ -250,8 +256,10 @@ export const useADM004 = () => {
   /**
    * Map message từ backend về đúng field trong form
    */
-  const getFieldFromBackendValidateMessage = useCallback((message: any): keyof EmployeeFormData | null => {
-    const label = (message?.params?.[0] as string | undefined) || '';
+  const getFieldFromBackendValidateMessage = useCallback((message?: MessageResponse | null): keyof EmployeeFormData | null => {
+    let label = (message?.params?.[0] as string | undefined) || '';
+    // Loại bỏ dấu ngoặc vuông nếu có (ví dụ: [アカウント名] -> アカウント名)
+    label = label.replace(/^\[/, '').replace(/\]$/, '');
     return (LABEL_TO_FIELD_MAP[label] as keyof EmployeeFormData) || null;
   }, []);
 
@@ -315,13 +323,13 @@ export const useADM004 = () => {
         if (field) {
           setError(field as any, { type: 'server', message: errorMessage }, { shouldFocus: true });
         } else {
-          setDepartmentErrorMessage(errorMessage); // Hiển thị lỗi chung ở đầu form
+          setDepartmentErrorMessage(errorMessage);
         }
       }
     } catch (error: any) {
       console.error('Validation error:', error);
       const status = error.response?.status;
-      
+
       // Nếu là lỗi validation trả về 500 kèm message object
       if (status === 500 && error.response?.data?.message) {
         const message = error.response.data.message;
@@ -337,7 +345,12 @@ export const useADM004 = () => {
         // Lỗi hệ thống thực sự
         const backendError = error.response?.data?.message;
         const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
+        const errorCode = backendError?.code || '';
+
         sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
+        if (errorCode) {
+          sessionStorage.setItem('SYSTEM_ERROR_CODE', errorCode);
+        }
         router.push('/employees/systemError');
       }
     }

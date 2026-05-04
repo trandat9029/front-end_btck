@@ -75,7 +75,7 @@ export const employeeApi = {
   ): Promise<EmployeeListApiResponse> => {
     const config = mode ? { params: { MODE: mode } } : undefined;
     const requestData = transformEmployeeRequest(formData);
-    
+
     const response = await apiClient.post<EmployeeListApiResponse>(
       '/employee/validate',
       requestData,

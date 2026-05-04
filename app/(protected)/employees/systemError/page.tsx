@@ -15,25 +15,34 @@ import { useRouter } from 'next/navigation';
 export default function SystemErrorPage() {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState('');
+  const [errorCode, setErrorCode] = useState('');
 
   useEffect(() => {
     // Đọc thông báo lỗi từ sessionStorage (được set bởi interceptor hoặc hook)
     const msg = sessionStorage.getItem('SYSTEM_ERROR_MESSAGE');
+    const code = sessionStorage.getItem('SYSTEM_ERROR_CODE');
+
     if (msg) {
       setErrorMessage(msg);
-      // Xóa message sau khi đã lấy để tránh hiển thị lại khi reload trang không mong muốn
+      setErrorCode(code || '');
+      // Xóa sau khi đã lấy để tránh hiển thị lại khi reload trang không mong muốn
       sessionStorage.removeItem('SYSTEM_ERROR_MESSAGE');
+      sessionStorage.removeItem('SYSTEM_ERROR_CODE');
     } else {
       // Fallback nếu không có msg trong storage (ví dụ từ URL cũ hoặc truy cập trực tiếp)
       const searchParams = new URLSearchParams(window.location.search);
       setErrorMessage(searchParams.get('msg') || 'システムエラーが発生しました。');
+      setErrorCode(searchParams.get('code') || '');
     }
   }, []);
 
   return (
     <div className="box-shadow">
       <div className="notification-box">
-        <h1 className="msg-title text-danger">{errorMessage}</h1>
+        <h1 className="msg-title text-danger">
+          {errorCode ? `${errorCode}: ` : ''}
+          {errorMessage}
+        </h1>
         <div className="notification-box-btn">
           <button
             type="button"
