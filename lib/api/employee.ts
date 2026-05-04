@@ -7,6 +7,34 @@ import { apiClient } from './client';
 import { EmployeeDetailResponse, EmployeeFormData, EmployeeListApiResponse, EmployeeUpdateApiResponse, GetEmployeesParams } from '@/types/employee';
 
 /**
+ * Hàm hỗ trợ chuyển đổi EmployeeFormData (phẳng) sang cấu trúc Backend mong đợi (lồng nhau).
+ * @param formData Dữ liệu form phẳng từ frontend
+ * @return Đối tượng dữ liệu đã được cấu trúc lại
+ */
+const transformEmployeeRequest = (formData: EmployeeFormData) => {
+  const {
+    certificationId,
+    certificationStartDate,
+    certificationEndDate,
+    employeeCertificationScore,
+    ...employeeBaseData
+  } = formData;
+
+  // Nếu có chọn chứng chỉ thì mới gửi certificationRequest
+  const certificationRequest = certificationId ? {
+    certificationId,
+    certificationStartDate,
+    certificationEndDate,
+    employeeCertificationScore
+  } : null;
+
+  return {
+    ...employeeBaseData,
+    certificationRequest
+  };
+};
+
+/**
  * Các phương thức gọi API liên quan đến nhân viên.
  * @author tranledat
  */
@@ -28,7 +56,7 @@ export const employeeApi = {
       }
     });
 
-    const response = await apiClient.get<EmployeeListApiResponse>('/employees', {
+    const response = await apiClient.get<EmployeeListApiResponse>('/employee', {
       params: cleanParams,
     });
 
@@ -38,17 +66,19 @@ export const employeeApi = {
   /**
    * Gọi API validate dữ liệu nhân viên cho ADM004.
    * @param formData Dữ liệu form nhân viên cần validate
-   * @param step Bước validate (input: từ form nhập liệu, all/undefined: toàn bộ)
+   * @param mode Bước validate (SUBMIT hoặc CONFIRM)
    * @return Kết quả validate (200 OK hoặc mã lỗi kèm danh sách field lỗi)
    */
   validateEmployee: async (
     formData: EmployeeFormData,
-    step?: string
+    mode?: string
   ): Promise<EmployeeListApiResponse> => {
-    const config = step ? { params: { step } } : undefined;
+    const config = mode ? { params: { MODE: mode } } : undefined;
+    const requestData = transformEmployeeRequest(formData);
+    
     const response = await apiClient.post<EmployeeListApiResponse>(
-      '/employees/validate',
-      formData,
+      '/employee/validate',
+      requestData,
       config
     );
     return response.data;
@@ -62,9 +92,10 @@ export const employeeApi = {
   addEmployee: async (
     formData: EmployeeFormData
   ): Promise<EmployeeUpdateApiResponse> => {
+    const requestData = transformEmployeeRequest(formData);
     const response = await apiClient.post<EmployeeUpdateApiResponse>(
-      '/employees',
-      formData
+      '/employee',
+      requestData
     );
     return response.data;
   },
@@ -77,10 +108,10 @@ export const employeeApi = {
   updateEmployee: async (
     formData: EmployeeFormData
   ): Promise<EmployeeUpdateApiResponse> => {
-    // Lấy ID nhân viên từ formData hoặc storage nếu cần, ở đây giả định có sẵn trong formData
+    const requestData = transformEmployeeRequest(formData);
     const response = await apiClient.put<EmployeeUpdateApiResponse>(
-      `/employees/${formData.employeeId}`,
-      formData
+      '/employee',
+      requestData
     );
     return response.data;
   },
@@ -91,7 +122,7 @@ export const employeeApi = {
    * @return EmployeeDetailResponse Thông tin chi tiết của nhân viên bao gồm cả danh sách chứng chỉ
    */
   getEmployeeById: async (id: number): Promise<EmployeeDetailResponse> => {
-    const response = await apiClient.get<EmployeeDetailResponse>(`/employees/${id}`);
+    const response = await apiClient.get<EmployeeDetailResponse>(`/employee/${id}`);
     return response.data;
   },
 
@@ -101,7 +132,7 @@ export const employeeApi = {
    * @return EmployeeListApiResponse Kết quả thực hiện xóa (thành công hoặc mã lỗi)
    */
   deleteEmployee: async (id: number): Promise<EmployeeListApiResponse> => {
-    const response = await apiClient.delete<EmployeeListApiResponse>(`/employees/${id}`);
+    const response = await apiClient.delete<EmployeeListApiResponse>(`/employee/${id}`);
     return response.data;
   },
 };

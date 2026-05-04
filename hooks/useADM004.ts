@@ -26,7 +26,8 @@ import {
   saveEmployeeFormDataStorage,
   clearEmployeeFormDataStorage
 } from '@/lib/storage/employee';
-import { extractErrorMessage } from '@/lib/utils/error';
+import { formatBackendMessage } from '@/lib/utils/message';
+import { LABEL_TO_FIELD_MAP, ERROR_MESSAGES } from '@/constants/messages';
 
 /**
  * Hook quản lý logic cho màn hình ADM004 (Đăng ký/Chỉnh sửa nhân viên).
@@ -100,13 +101,13 @@ export const useADM004 = () => {
         if (!isMounted) return;
 
         // Cập nhật Master Data
-        if (deptRes.code === '200') {
+        if (String(deptRes.code) === '200') {
           setDepartments(deptRes.departments);
         } else {
           setDepartmentErrorMessage(deptRes.message || Messages.MSG_ERROR_FETCH_DEPARTMENTS);
         }
 
-        if (certRes.code === '200') {
+        if (String(certRes.code) === '200') {
           setCertifications(certRes.certifications);
         } else {
           setCertificationErrorMessage(certRes.message || Messages.MSG_ERROR_FETCH_CERTIFICATIONS);
@@ -149,8 +150,10 @@ export const useADM004 = () => {
             }
           } catch (error: any) {
             console.error('Error fetching employee detail for edit:', error);
-            const errorMsg = extractErrorMessage(error.response?.data, Messages.MSG_INVALID_EMPLOYEE_ID);
-            router.push(`/employees/systemError?msg=${encodeURIComponent(errorMsg)}`);
+            const backendError = error.response?.data?.message;
+            const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
+            sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
+            router.push('/employees/systemError');
             return;
           }
         } 
@@ -245,29 +248,17 @@ export const useADM004 = () => {
   }, []);
 
   /**
+   * Map message từ backend về đúng field trong form
+   */
+  const getFieldFromBackendValidateMessage = useCallback((message: any): keyof EmployeeFormData | null => {
+    const label = (message?.params?.[0] as string | undefined) || '';
+    return (LABEL_TO_FIELD_MAP[label] as keyof EmployeeFormData) || null;
+  }, []);
+
+  /**
    * Gọi API validate dữ liệu ở Backend.
    * @return Danh sách lỗi server
    */
-  const validateEmployee = useCallback(async (): Promise<{ field: string; message: string }[]> => {
-    try {
-      const response = await employeeApi.validateEmployee(formData, VALIDATE_STEP_INPUT);
-
-      if (response.code !== '200') {
-        if (response.fieldErrors && response.fieldErrors.length > 0) {
-          return response.fieldErrors as { field: string; message: string }[];
-        }
-        const errorMsg = extractErrorMessage(response, Messages.MSG_ERROR_VALIDATE_FAILED);
-        return [{ field: 'employeeLoginId', message: errorMsg }];
-      }
-
-      return [];
-    } catch (error) {
-      return [{
-        field: 'employeeLoginId',
-        message: error instanceof Error ? error.message : Messages.MSG_ERROR_SYSTEM
-      }];
-    }
-  }, [formData]);
 
   /**
    * Xử lý thay đổi giá trị trường.
@@ -304,18 +295,51 @@ export const useADM004 = () => {
    * Xử lý xác nhận form.
    */
   const handleConfirm = handleSubmit(async () => {
-    const serverErrors = await validateEmployee();
+    try {
+      setDepartmentErrorMessage('');
+      setCertificationErrorMessage('');
 
-    if (serverErrors.length === 0) {
-      saveFormData();
-      router.push('/employees/adm005');
-    } else {
-      serverErrors.forEach((error) => {
-        setError(error.field as any, {
-          type: 'server',
-          message: error.message
-        });
-      });
+      // 1. Gọi API validate dữ liệu ở Backend.
+      const response = await employeeApi.validateEmployee(formData, VALIDATE_STEP_INPUT);
+
+      if (String(response.code) === '200') {
+        // Validate thành công
+        saveFormData();
+        router.push('/employees/adm005');
+      } else {
+        // Lỗi nghiệp vụ (Mã lỗi ERxxx trả về từ validator)
+        const message = response.message;
+        const field = getFieldFromBackendValidateMessage(message);
+        const errorMessage = formatBackendMessage(message) || Messages.MSG_ERROR_VALIDATE_FAILED;
+
+        if (field) {
+          setError(field as any, { type: 'server', message: errorMessage }, { shouldFocus: true });
+        } else {
+          setDepartmentErrorMessage(errorMessage); // Hiển thị lỗi chung ở đầu form
+        }
+      }
+    } catch (error: any) {
+      console.error('Validation error:', error);
+      const status = error.response?.status;
+      
+      // Nếu là lỗi validation trả về 500 kèm message object
+      if (status === 500 && error.response?.data?.message) {
+        const message = error.response.data.message;
+        const field = getFieldFromBackendValidateMessage(message);
+        const errorMessage = formatBackendMessage(message) || Messages.MSG_ERROR_VALIDATE_FAILED;
+
+        if (field) {
+          setError(field as any, { type: 'server', message: errorMessage }, { shouldFocus: true });
+        } else {
+          setDepartmentErrorMessage(errorMessage);
+        }
+      } else {
+        // Lỗi hệ thống thực sự
+        const backendError = error.response?.data?.message;
+        const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
+        sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
+        router.push('/employees/systemError');
+      }
     }
   });
 

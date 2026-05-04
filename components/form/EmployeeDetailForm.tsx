@@ -6,6 +6,7 @@
 
 import React from 'react'
 import { useADM003 } from '@/hooks/useADM003';
+import { formatDateDisplay } from '@/lib/utils/date';
 
 /**
  * Component hiển thị màn hình chi tiết thông tin nhân viên (ADM003).
@@ -62,7 +63,7 @@ function EmployeeDetailForm() {
                 </li>
                 <li className="form-group row d-flex">
                     <label className="col-form-label col-sm-2">生年月日</label>
-                    <div className="col-sm col-sm-10">{employee.employeeBirthDate?.replace(/-/g, '/')}</div>
+                    <div className="col-sm col-sm-10">{formatDateDisplay(employee.employeeBirthDate)}</div>
                 </li>
                 <li className="form-group row d-flex">
                     <label className="col-form-label col-sm-2">メールアドレス</label>
@@ -82,11 +83,11 @@ function EmployeeDetailForm() {
                         </li>
                         <li className="form-group row d-flex">
                             <label className="col-form-label col-sm-2">資格交付日</label>
-                            <div className="col-sm col-sm-10">{cert.startDate?.replace(/-/g, '/')}</div>
+                            <div className="col-sm col-sm-10">{formatDateDisplay(cert.startDate)}</div>
                         </li>
                         <li className="form-group row d-flex">
                             <label className="col-form-label col-sm-2">失効日</label>
-                            <div className="col-sm col-sm-10">{cert.endDate?.replace(/-/g, '/')}</div>
+                            <div className="col-sm col-sm-10">{formatDateDisplay(cert.endDate)}</div>
                         </li>
                         <li className="form-group row d-flex">
                             <label className="col-form-label col-sm-2">点数</label>

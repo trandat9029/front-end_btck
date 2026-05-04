@@ -9,7 +9,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { employeeApi } from "@/lib/api/employee";
 import { EmployeeDetailResponse } from "@/types/employee";
 import * as Messages from "@/constants/messages";
-import { extractErrorMessage } from "@/lib/utils/error";
+import { formatBackendMessage } from "@/lib/utils/message";
 
 /**
  * Hook xử lý logic cho màn hình chi tiết nhân viên (ADM003).
@@ -38,7 +38,8 @@ export const useADM003 = () => {
   const fetchEmployeeDetail = useCallback(async () => {
     // Nếu không có employeeId trong URL, chuyển sang màn hình lỗi hệ thống
     if (!employeeId) {
-      router.push(`/employees/systemError?msg=${encodeURIComponent(Messages.MSG_INVALID_EMPLOYEE_ID)}`);
+      sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', Messages.MSG_INVALID_EMPLOYEE_ID);
+      router.push('/employees/systemError');
       return;
     }
 
@@ -49,8 +50,11 @@ export const useADM003 = () => {
     } catch (error: any) {
       console.error("Error fetching employee detail:", error);
       // Chuyển hướng sang màn hình lỗi hệ thống khi có lỗi từ server kèm message
-      const errorMsg = extractErrorMessage(error.response?.data, Messages.MSG_ERROR_SERVER_CONNECTION);
-      router.push(`/employees/systemError?msg=${encodeURIComponent(errorMsg)}`);
+      const backendError = error.response?.data?.message;
+      const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SERVER_CONNECTION;
+      
+      sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
+      router.push('/employees/systemError');
     } finally {
       setIsLoading(false);
     }
@@ -71,12 +75,16 @@ export const useADM003 = () => {
       try {
         const response = await employeeApi.deleteEmployee(employeeId);
         // TH API trả về trạng thái thành công: di chuyển sang MH complete với mã message được trả về từ API
-        router.push(`/employees/adm006?msg=${encodeURIComponent(response.message || "")}`);
+        const successMsg = formatBackendMessage(response.message);
+        router.push(`/employees/adm006?msg=${encodeURIComponent(successMsg)}`);
       } catch (error: any) {
         console.error("Error deleting employee:", error);
         // TH API trả về lỗi hiển thị ở màn SystemError với mã message lấy từ API
-        const errorMsg = extractErrorMessage(error.response?.data, Messages.MSG_ERROR_DELETE_FAILED);
-        router.push(`/employees/systemError?msg=${encodeURIComponent(errorMsg)}`);
+        const backendError = error.response?.data?.message;
+        const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_DELETE_FAILED;
+
+        sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
+        router.push('/employees/systemError');
       }
     }
   };

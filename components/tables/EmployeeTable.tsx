@@ -7,6 +7,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { EmployeeListItem, SortOrder } from "@/types/employee";
+import { formatDateDisplay } from "@/lib/utils/date";
 
 interface Props {
   employees: EmployeeListItem[];
@@ -102,12 +103,12 @@ export default function EmployeeTable({
                     {e.employeeName}
                   </Link>
                 </div>
-                <div>{e.employeeBirthDate}</div>
+                <div>{formatDateDisplay(e.employeeBirthDate)}</div>
                 <div>{e.departmentName}</div>
                 <div>{e.employeeEmail}</div>
                 <div>{e.employeeTelephone}</div>
                 <div>{e.certificationName}</div>
-                <div>{e.endDate}</div>
+                <div>{formatDateDisplay(e.endDate)}</div>
                 <div>{e.score ?? ""}</div>
               </Fragment>
             ))}

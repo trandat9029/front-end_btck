@@ -4,7 +4,8 @@
  */
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 /**
  * Màn hình hiển thị lỗi hệ thống (System Error).
@@ -13,13 +14,26 @@ import { useRouter, useSearchParams } from 'next/navigation';
  */
 export default function SystemErrorPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const message = searchParams.get('msg') || 'Error message';
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    // Đọc thông báo lỗi từ sessionStorage (được set bởi interceptor hoặc hook)
+    const msg = sessionStorage.getItem('SYSTEM_ERROR_MESSAGE');
+    if (msg) {
+      setErrorMessage(msg);
+      // Xóa message sau khi đã lấy để tránh hiển thị lại khi reload trang không mong muốn
+      sessionStorage.removeItem('SYSTEM_ERROR_MESSAGE');
+    } else {
+      // Fallback nếu không có msg trong storage (ví dụ từ URL cũ hoặc truy cập trực tiếp)
+      const searchParams = new URLSearchParams(window.location.search);
+      setErrorMessage(searchParams.get('msg') || 'システムエラーが発生しました。');
+    }
+  }, []);
 
   return (
     <div className="box-shadow">
       <div className="notification-box">
-        <h1 className="msg-title text-danger">{message}</h1>
+        <h1 className="msg-title text-danger">{errorMessage}</h1>
         <div className="notification-box-btn">
           <button
             type="button"

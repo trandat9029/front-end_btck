@@ -12,13 +12,12 @@ import { departmentApi } from '@/lib/api/department';
 import { employeeApi } from '@/lib/api/employee';
 import { Certification } from '@/types/certifications';
 import { Department } from '@/types/department';
-import * as MessageCode from '@/constants/messageCode';
 import * as Messages from '@/constants/messages';
 import {
   clearEmployeeFormDataStorage,
   loadEmployeeFormDataStorage
 } from '@/lib/storage/employee';
-import { extractErrorMessage } from '@/lib/utils/error';
+import { formatBackendMessage } from '@/lib/utils/message';
 
 /**
  * Hook quản lý logic và hành vi cho màn hình xác nhận thông tin nhân viên (ADM005).
@@ -57,10 +56,10 @@ export const useADM005 = () => {
         if (!isMounted) return;
 
         setDepartments(
-          departmentResponse.code === '200' ? departmentResponse.departments : []
+          String(departmentResponse.code) === '200' ? departmentResponse.departments : []
         );
         setCertifications(
-          certificationResponse.code === '200'
+          String(certificationResponse.code) === '200'
             ? certificationResponse.certifications
             : []
         );
@@ -80,36 +79,6 @@ export const useADM005 = () => {
     };
   }, []);
 
-  /**
-   * Ánh xạ mã lỗi từ Backend sang thông điệp hiển thị.
-   * @param code Mã lỗi (ví dụ: ER001, ER015)
-   * @param fallbackMessage Thông điệp dự phòng nếu không tìm thấy mã
-   * @returns Thông điệp tiếng Việt
-   */
-  const getErrorMessage = (code: string, fallbackMessage: string): string => {
-    const errorMap: Record<string, string> = {
-      'ER001': MessageCode.ER001,
-      'ER002': MessageCode.ER002,
-      'ER003': MessageCode.ER003,
-      'ER004': MessageCode.ER004,
-      'ER005': MessageCode.ER005,
-      'ER006': MessageCode.ER006,
-      'ER007': MessageCode.ER007,
-      'ER008': MessageCode.ER008,
-      'ER009': MessageCode.ER009,
-      'ER011': MessageCode.ER011,
-      'ER012': MessageCode.ER012,
-      'ER013': MessageCode.ER013,
-      'ER014': MessageCode.ER014,
-      'ER015': MessageCode.ER015,
-      'ER023': MessageCode.ER023,
-      'MSG001': MessageCode.MSG001,
-      'MSG002': MessageCode.MSG002,
-      'MSG003': MessageCode.MSG003,
-    };
-
-    return errorMap[code] || fallbackMessage;
-  };
 
   /**
    * Lấy tên phòng ban từ ID đã lưu.
@@ -159,21 +128,24 @@ export const useADM005 = () => {
           ? await employeeApi.updateEmployee(formData)
           : await employeeApi.addEmployee(formData);
 
-      if (response.code === '200') {
+      if (String(response.code) === '200') {
         clearEmployeeFormDataStorage();
-        // Ưu tiên lấy message từ backend nếu có, nếu không thì tự dịch ở frontend
-        const successMsg = response.message.message || getErrorMessage(response.message.code, '');
+        // Thành công: Dịch mã MSG00x
+        const successMsg = formatBackendMessage(response.message);
         router.push(`/employees/adm006?msg=${encodeURIComponent(successMsg)}`);
       } else {
-        // Có lỗi nghiệp vụ từ Backend (mã lỗi ERxxx)
-        const errorMsg = extractErrorMessage(response, Messages.MSG_ERROR_SAVE_EMPLOYEE);
-        // Nếu extract được mã lỗi, thử map qua bảng thông báo tiếng Việt
-        setServerErrorMessage(getErrorMessage(errorMsg, errorMsg));
+        // Lỗi nghiệp vụ (200 OK nhưng code != 200)
+        const errorMsg = formatBackendMessage(response.message) || Messages.MSG_ERROR_SAVE_EMPLOYEE;
+        setServerErrorMessage(errorMsg);
       }
     } catch (error: any) {
       console.error('Error saving employee:', error);
-      const errorMsg = extractErrorMessage(error.response?.data, Messages.MSG_ERROR_SYSTEM);
-      setServerErrorMessage(getErrorMessage(errorMsg, errorMsg));
+      // Lỗi hệ thống (500)
+      const backendError = error.response?.data?.message;
+      const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
+      
+      sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
+      router.push('/employees/systemError');
     } finally {
       setIsSubmitting(false);
     }

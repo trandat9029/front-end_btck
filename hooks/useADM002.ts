@@ -10,7 +10,7 @@ import {
   sanitizeEmployeeNameInput,
   validateEmployeeName,
 } from '@/lib/validation/employee';
-import { extractErrorMessage } from '@/lib/utils/error';
+import { formatBackendMessage } from '@/lib/utils/message';
 import { Department } from '@/types/department';
 import {
   EmployeeListApiResponse,
@@ -48,7 +48,8 @@ const parsePositiveInteger = (value: string | null, fallback: number) => {
 };
 
 const parseSortOrder = (value: string | null, fallback: SortOrder): SortOrder => {
-  return value === 'asc' || value === 'desc' ? value : fallback;
+  const lowerValue = value?.toLowerCase();
+  return lowerValue === 'asc' || lowerValue === 'desc' ? lowerValue as SortOrder : fallback;
 };
 
 export const useADM002 = () => {
@@ -74,15 +75,18 @@ export const useADM002 = () => {
   );
   const [endDateSort, setEndDateSort] = useState<SortOrder>(DEFAULT_SORTS.ordEndDate);
 
+  /**
+   * Xây dựng query string cho URL, giữ nguyên snake_case cho URL nhưng map từ camelCase state.
+   */
   const buildSearchStateQuery = useCallback((state: SearchState) => {
     const params = new URLSearchParams();
 
     if (state.employeeName.trim()) {
-      params.set('employee_name', state.employeeName.trim());
+      params.set('employeeName', state.employeeName.trim());
     }
 
     if (state.departmentId) {
-      params.set('department_id', state.departmentId);
+      params.set('departmentId', state.departmentId);
     }
 
     if (state.page > 1) {
@@ -90,15 +94,15 @@ export const useADM002 = () => {
     }
 
     if (state.ordEmployeeName !== DEFAULT_SORTS.ordEmployeeName) {
-      params.set('ord_employee_name', state.ordEmployeeName);
+      params.set('ordEmployeeName', state.ordEmployeeName);
     }
 
     if (state.ordCertificationName !== DEFAULT_SORTS.ordCertificationName) {
-      params.set('ord_certification_name', state.ordCertificationName);
+      params.set('ordCertificationName', state.ordCertificationName);
     }
 
     if (state.ordEndDate !== DEFAULT_SORTS.ordEndDate) {
-      params.set('ord_end_date', state.ordEndDate);
+      params.set('ordEndDate', state.ordEndDate);
     }
 
     return params.toString();
@@ -126,26 +130,26 @@ export const useADM002 = () => {
       setErrorMessage('');
 
       try {
+        // Map tham số sang camelCase và viết hoa ASC/DESC cho Backend
         const data = await employeeApi.getEmployees({
-          employee_name: nextEmployeeName.trim(),
-          department_id: nextDepartmentId,
-          ord_employee_name: ordEmployeeName,
-          ord_certification_name: ordCertificationName,
-          ord_end_date: ordEndDate,
+          employeeName: nextEmployeeName.trim(),
+          departmentId: nextDepartmentId,
+          ordEmployeeName: ordEmployeeName.toUpperCase() as any,
+          ordCertificationName: ordCertificationName.toUpperCase() as any,
+          ordEndDate: ordEndDate.toUpperCase() as any,
           offset: Math.max(page - 1, 0) * limit,
           limit,
         });
 
-        if (data.code !== '200') {
+        if (String(data.code) !== '200') {
           throw new Error(data.message || 'Failed to load employees.');
         }
 
         setEmployees(data.employees ?? []);
         setTotalRecords(data.totalRecords ?? 0);
-      } catch (error) {
-        const apiError = error as AxiosError<EmployeeListApiResponse>;
-        const responseData = apiError.response?.data;
-        const responseMessage = extractErrorMessage(responseData, error instanceof Error ? error.message : 'Failed to load employees.');
+      } catch (error: any) {
+        const backendError = error.response?.data?.message;
+        const responseMessage = formatBackendMessage(backendError) || 'Failed to load employees.';
 
         setEmployees([]);
         setTotalRecords(0);
@@ -161,35 +165,36 @@ export const useADM002 = () => {
     try {
       const response = await departmentApi.getDepartments();
 
-      if (response.code === '200') {
+      if (String(response.code) === '200') {
         setDepartments(response.departments);
         setDepartmentErrorMessage('');
         return;
       }
 
       setDepartments([]);
-      setDepartmentErrorMessage('Failed to load departments.');
-    } catch {
+      setDepartmentErrorMessage(response.message || 'Failed to load departments.');
+    } catch (error: any) {
       setDepartments([]);
-      setDepartmentErrorMessage('Failed to load departments.');
+      const backendError = error.response?.data?.message;
+      setDepartmentErrorMessage(formatBackendMessage(backendError) || 'Failed to load departments.');
     }
   }, []);
 
   useEffect(() => {
     const initialState: SearchState = {
-      employeeName: searchParams.get('employee_name') ?? '',
-      departmentId: searchParams.get('department_id') ?? '',
+      employeeName: searchParams.get('employeeName') ?? '',
+      departmentId: searchParams.get('departmentId') ?? '',
       page: parsePositiveInteger(searchParams.get('page'), 1),
       ordEmployeeName: parseSortOrder(
-        searchParams.get('ord_employee_name'),
+        searchParams.get('ordEmployeeName'),
         DEFAULT_SORTS.ordEmployeeName
       ),
       ordCertificationName: parseSortOrder(
-        searchParams.get('ord_certification_name'),
+        searchParams.get('ordCertificationName'),
         DEFAULT_SORTS.ordCertificationName
       ),
       ordEndDate: parseSortOrder(
-        searchParams.get('ord_end_date'),
+        searchParams.get('ordEndDate'),
         DEFAULT_SORTS.ordEndDate
       ),
     };
