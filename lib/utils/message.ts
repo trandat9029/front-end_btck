@@ -12,6 +12,26 @@ export const formatMessage = (message: string, label: string) => {
 };
 
 /**
+ * Tạo thông báo lỗi validation từ mã lỗi và các tham số.
+ * Dùng trực tiếp trong các schema validation.
+ */
+export const formatValidationMessage = (code: string, label: string, ...params: string[]): string => {
+  const template = ERROR_MESSAGES[code] || code;
+  let result = formatMessage(template, label);
+  result = result.replace('「画面上の項目名」', label).replace('画面上の項目名', label);
+
+  params.forEach((value) => {
+    if (result.includes('xxxx')) {
+      result = result.replace('xxxx', value);
+    } else if (result.includes('xxx')) {
+      result = result.replace('xxx', value);
+    }
+  });
+
+  return result;
+};
+
+/**
  * Format message với label (thay thế 画面上の項目名)
  */
 export const formatMessage2 = (message: string, label: string) => {

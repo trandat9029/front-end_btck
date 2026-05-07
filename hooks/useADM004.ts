@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import axios, { isAxiosError } from 'axios';
 import { employeeSchema } from '@/lib/validation/employee';
 import { ADD, EDIT, VALIDATE_STEP_INPUT } from '@/constants/employee';
 import { certificationApi } from '@/lib/api/certifications';
@@ -19,6 +20,8 @@ import { Department } from '@/types/department';
 import { EmployeeFormData, EmployeeFormMode, MessageResponse } from '@/types/employee';
 import { employeeApi } from '@/lib/api/employee';
 import * as Messages from '@/constants/messages';
+import { ROUTES } from '@/constants/routes';
+import { STORAGE_KEYS, HTTP_STATUS } from '@/constants/system';
 import {
   createEmptyEmployeeFormData,
   createEmployeeFormDataStorage,
@@ -101,13 +104,13 @@ export const useADM004 = () => {
         if (!isMounted) return;
 
         // Cập nhật Master Data
-        if (String(deptRes.code) === '200') {
+        if (String(deptRes.code) === String(HTTP_STATUS.OK)) {
           setDepartments(deptRes.departments);
         } else {
           setDepartmentErrorMessage(deptRes.message || Messages.MSG_ERROR_FETCH_DEPARTMENTS);
         }
 
-        if (String(certRes.code) === '200') {
+        if (String(certRes.code) === String(HTTP_STATUS.OK)) {
           setCertifications(certRes.certifications);
         } else {
           setCertificationErrorMessage(certRes.message || Messages.MSG_ERROR_FETCH_CERTIFICATIONS);
@@ -122,8 +125,8 @@ export const useADM004 = () => {
           storedSessionData.mode === mode &&
           storedSessionData.employeeId === employeeId;
 
-        if (isStorageMatched && (isBack || storedSessionData?.formData)) {
-          // TRƯỜNG HỢP 1: Ưu tiên dữ liệu từ Storage (do quay lại từ Confirm hoặc Reload trang)
+        if (isStorageMatched && isBack) {
+          // TRƯỜNG HỢP 1: Chắc chắn là quay lại từ ADM005 (có isBack) -> Lấy từ Storage
           initialData = storedSessionData.formData;
         } else if (mode === EDIT && employeeId) {
           // TRƯỜNG HỢP 2: Chế độ Edit nhưng không có dữ liệu storage khớp -> Lấy từ API
@@ -148,23 +151,28 @@ export const useADM004 = () => {
                 employeeCertificationScore: cert ? String(cert.score) : '',
               };
             }
-          } catch (error: any) {
+          } catch (error) {
             console.error('Error fetching employee detail for edit:', error);
-            const backendError = error.response?.data?.message;
-            const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
-            const errorCode = backendError?.code || '';
+            let errorMsg = Messages.MSG_ERROR_SYSTEM;
+            let errorCode = '';
 
-            sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
-            if (errorCode) {
-              sessionStorage.setItem('SYSTEM_ERROR_CODE', errorCode);
+            if (isAxiosError(error)) {
+              const backendError = error.response?.data?.message;
+              errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
+              errorCode = backendError?.code || '';
             }
-            router.push('/employees/systemError');
+
+            sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, errorMsg);
+            if (errorCode) {
+              sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_CODE, errorCode);
+            }
+            router.push(ROUTES.SYSTEM_ERROR);
             return;
           }
         }
 
-        // Cleanup storage nếu vào mới hoàn toàn (không phải quay lại và không có dữ liệu khớp)
-        if (!isBack && !isStorageMatched) {
+        // Xóa storage nếu không phải quay lại từ màn ADM005 (tức là F5 reload hoặc vào mới từ ADM002)
+        if (!isBack) {
           clearEmployeeFormDataStorage();
         }
 
@@ -195,7 +203,8 @@ export const useADM004 = () => {
     return () => {
       isMounted = false;
     };
-  }, [employeeId, mode, isBack, reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employeeId, mode, reset]);
 
   /**
    * Cập nhật giá trị của một trường trong form.
@@ -273,9 +282,9 @@ export const useADM004 = () => {
    * @param field Tên trường
    * @param value Giá trị
    */
-  const handleFieldChange = useCallback((field: keyof EmployeeFormData, value: any) => {
-    updateFormField(field, value);
-    setValue(field, value, { shouldValidate: true });
+  const handleFieldChange = useCallback((field: keyof EmployeeFormData, value: string | number) => {
+    updateFormField(field, value as any);
+    setValue(field, value as any, { shouldValidate: true });
   }, [updateFormField, setValue]);
 
   /**
@@ -310,10 +319,10 @@ export const useADM004 = () => {
       // 1. Gọi API validate dữ liệu ở Backend.
       const response = await employeeApi.validateEmployee(formData, VALIDATE_STEP_INPUT);
 
-      if (String(response.code) === '200') {
+      if (String(response.code) === String(HTTP_STATUS.OK)) {
         // Validate thành công
         saveFormData();
-        router.push('/employees/adm005');
+        router.push(ROUTES.ADM005);
       } else {
         // Lỗi nghiệp vụ (Mã lỗi ERxxx trả về từ validator)
         const message = response.message;
@@ -326,32 +335,39 @@ export const useADM004 = () => {
           setDepartmentErrorMessage(errorMessage);
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Validation error:', error);
-      const status = error.response?.status;
+      
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
 
-      // Nếu là lỗi validation trả về 500 kèm message object
-      if (status === 500 && error.response?.data?.message) {
-        const message = error.response.data.message;
-        const field = getFieldFromBackendValidateMessage(message);
-        const errorMessage = formatBackendMessage(message) || Messages.MSG_ERROR_VALIDATE_FAILED;
+        // Nếu là lỗi validation trả về 500 kèm message object
+        if (status === 500 && error.response?.data?.message) {
+          const message = error.response.data.message;
+          const field = getFieldFromBackendValidateMessage(message);
+          const errorMessage = formatBackendMessage(message) || Messages.MSG_ERROR_VALIDATE_FAILED;
 
-        if (field) {
-          setError(field as any, { type: 'server', message: errorMessage }, { shouldFocus: true });
+          if (field) {
+            setError(field as any, { type: 'server', message: errorMessage }, { shouldFocus: true });
+          } else {
+            setDepartmentErrorMessage(errorMessage);
+          }
         } else {
-          setDepartmentErrorMessage(errorMessage);
+          // Lỗi hệ thống thực sự
+          const backendError = error.response?.data?.message;
+          const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
+          const errorCode = backendError?.code || '';
+
+          sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, errorMsg);
+          if (errorCode) {
+            sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_CODE, errorCode);
+          }
+          router.push(ROUTES.SYSTEM_ERROR);
         }
       } else {
-        // Lỗi hệ thống thực sự
-        const backendError = error.response?.data?.message;
-        const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
-        const errorCode = backendError?.code || '';
-
-        sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
-        if (errorCode) {
-          sessionStorage.setItem('SYSTEM_ERROR_CODE', errorCode);
-        }
-        router.push('/employees/systemError');
+        // Lỗi không phải từ Axios
+        sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, Messages.MSG_ERROR_SYSTEM);
+        router.push(ROUTES.SYSTEM_ERROR);
       }
     }
   });
@@ -361,15 +377,15 @@ export const useADM004 = () => {
    */
   const handleBack = useCallback(() => {
     clearFormData();
-    if (mode === 'edit' && employeeId) {
+    if (mode === EDIT && employeeId) {
       // Nếu là Edit, quay lại màn hình chi tiết ADM003
-      router.push(`/employees/adm003?id=${employeeId}`);
+      router.push(`${ROUTES.ADM003}?id=${employeeId}`);
     } else {
       // Nếu là Add, quay lại màn hình danh sách ADM002
       router.push(
         returnQueryString
-          ? `/employees/adm002?${returnQueryString}`
-          : '/employees/adm002'
+          ? `${ROUTES.ADM002}?${returnQueryString}`
+          : ROUTES.ADM002
       );
     }
   }, [clearFormData, router, returnQueryString, mode, employeeId]);

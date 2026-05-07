@@ -11,6 +11,8 @@ import {
   validateEmployeeName,
 } from '@/lib/validation/employee';
 import { formatBackendMessage } from '@/lib/utils/message';
+import { isAxiosError } from 'axios';
+import { HTTP_STATUS } from '@/constants/system';
 import { Department } from '@/types/department';
 import {
   EmployeeListApiResponse,
@@ -141,15 +143,21 @@ export const useADM002 = () => {
           limit,
         });
 
-        if (String(data.code) !== '200') {
-          throw new Error(data.message || 'Failed to load employees.');
+        if (String(data.code) !== String(HTTP_STATUS.OK)) {
+          throw new Error(formatBackendMessage(data.message) || 'Failed to load employees.');
         }
 
         setEmployees(data.employees ?? []);
         setTotalRecords(data.totalRecords ?? 0);
-      } catch (error: any) {
-        const backendError = error.response?.data?.message;
-        const responseMessage = formatBackendMessage(backendError) || 'Failed to load employees.';
+      } catch (error) {
+        let responseMessage = 'Failed to load employees.';
+        
+        if (isAxiosError(error)) {
+          const backendError = error.response?.data?.message;
+          responseMessage = formatBackendMessage(backendError) || responseMessage;
+        } else if (error instanceof Error) {
+          responseMessage = error.message;
+        }
 
         setEmployees([]);
         setTotalRecords(0);
@@ -165,7 +173,7 @@ export const useADM002 = () => {
     try {
       const response = await departmentApi.getDepartments();
 
-      if (String(response.code) === '200') {
+      if (String(response.code) === String(HTTP_STATUS.OK)) {
         setDepartments(response.departments);
         setDepartmentErrorMessage('');
         return;
@@ -173,10 +181,14 @@ export const useADM002 = () => {
 
       setDepartments([]);
       setDepartmentErrorMessage(response.message || 'Failed to load departments.');
-    } catch (error: any) {
+    } catch (error) {
       setDepartments([]);
-      const backendError = error.response?.data?.message;
-      setDepartmentErrorMessage(formatBackendMessage(backendError) || 'Failed to load departments.');
+      let errorMsg = 'Failed to load departments.';
+      if (isAxiosError(error)) {
+        const backendError = error.response?.data?.message;
+        errorMsg = formatBackendMessage(backendError) || errorMsg;
+      }
+      setDepartmentErrorMessage(errorMsg);
     }
   }, []);
 

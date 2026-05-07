@@ -346,6 +346,15 @@ main {
   display: flex;
 }
 
+.flex-column {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+}
+
+.mt-1 {
+  margin-top: 4px !important;
+} 
+
 .mr-auto, .mx-auto {
   margin-right: auto
 }
@@ -635,6 +644,11 @@ grid-template-rows: auto auto auto;
 
 .show-data li {
   border-bottom: 1px dotted #e3e3e3;
+}
+
+.show-data li div.col-sm-10 {
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .show-data li.title {

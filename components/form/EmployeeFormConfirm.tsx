@@ -28,9 +28,6 @@ function EmployeeFormConfirm() {
     return null;
   }
 
-  // Kiểm tra xem người dùng có chọn chứng chỉ nào không
-  const hasCertification = !!storedSessionData.formData.certificationId;
-
   return (
     <form className="c-form box-shadow">
       <ul className="show-data">
@@ -76,30 +73,26 @@ function EmployeeFormConfirm() {
           <div className="col-sm col-sm-10">{storedSessionData.formData.employeeTelephone}</div>
         </li>
 
-        {/* Chỉ hiển thị phần chứng chỉ nếu người dùng có chọn */}
-        {hasCertification && (
-          <>
-            <li className="title mt-12">
-              <a href="#!">日本語能力</a>
-            </li>
-            <li className="form-group row d-flex">
-              <label className="col-form-label col-sm-2">資格</label>
-              <div className="col-sm col-sm-10">{certificationName}</div>
-            </li>
-            <li className="form-group row d-flex">
-              <label className="col-form-label col-sm-2">資格交付日</label>
-              <div className="col-sm col-sm-10">{storedSessionData.formData.certificationStartDate}</div>
-            </li>
-            <li className="form-group row d-flex">
-              <label className="col-form-label col-sm-2">失効日</label>
-              <div className="col-sm col-sm-10">{storedSessionData.formData.certificationEndDate}</div>
-            </li>
-            <li className="form-group row d-flex">
-              <label className="col-form-label col-sm-2">点数</label>
-              <div className="col-sm col-sm-10">{storedSessionData.formData.employeeCertificationScore}</div>
-            </li>
-          </>
-        )}
+        {/* Luôn hiển thị phần chứng chỉ, nếu không chọn thì để trống */}
+        <li className="title mt-12">
+          <a href="#!">日本語能力</a>
+        </li>
+        <li className="form-group row d-flex">
+          <label className="col-form-label col-sm-2">資格</label>
+          <div className="col-sm col-sm-10">{certificationName}</div>
+        </li>
+        <li className="form-group row d-flex">
+          <label className="col-form-label col-sm-2">資格交付日</label>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.certificationStartDate}</div>
+        </li>
+        <li className="form-group row d-flex">
+          <label className="col-form-label col-sm-2">失効日</label>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.certificationEndDate}</div>
+        </li>
+        <li className="form-group row d-flex">
+          <label className="col-form-label col-sm-2">点数</label>
+          <div className="col-sm col-sm-10">{storedSessionData.formData.employeeCertificationScore}</div>
+        </li>
 
         <li className="form-group row d-flex">
           <div className="btn-group col-sm col-sm-10 ml">

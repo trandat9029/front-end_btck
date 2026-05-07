@@ -1,19 +1,19 @@
 import { apiClient } from './client';
-import type { Department, DepartmentListResponse, NormalizedDepartmentListResponse } from '@/types/department';
+import type { Department, DepartmentApiItem, DepartmentListResponse, NormalizedDepartmentListResponse } from '@/types/department';
 
 /**
  * Chuẩn hóa response phòng ban từ backend về cấu trúc front-end đang dùng.
  */
 function normalizeDepartments(payload: DepartmentListResponse): Department[] {
   if (Array.isArray(payload.departments)) {
-    return payload.departments.map((department: any) => ({
+    return payload.departments.map((department: Department) => ({
       departmentId: department.departmentId,
       departmentName: department.departmentName,
     }));
   }
 
   if (Array.isArray(payload.data)) {
-    return payload.data.map((department) => ({
+    return payload.data.map((department: DepartmentApiItem) => ({
       departmentId: department.departmentId,
       departmentName: department.departmentName,
     }));

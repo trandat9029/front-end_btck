@@ -9,7 +9,7 @@ import type {
 // Chuẩn hóa dữ liệu chứng chỉ từ nhiều định dạng response khác nhau về một cấu trúc thống nhất cho FE.
 function normalizeCertifications(payload: CertificationListResponse): Certification[] {
   if (Array.isArray(payload.certifications)) {
-    return payload.certifications.map((certification) => ({
+    return payload.certifications.map((certification: CertificationApiItem) => ({
       certificationId: certification.certificationId,
       certificationName: certification.certificationName,
     }));

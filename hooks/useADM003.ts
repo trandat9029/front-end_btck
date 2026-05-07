@@ -6,10 +6,14 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import axios, { isAxiosError } from "axios";
 import { employeeApi } from "@/lib/api/employee";
 import { EmployeeDetailResponse } from "@/types/employee";
 import * as Messages from "@/constants/messages";
 import { formatBackendMessage } from "@/lib/utils/message";
+import { ROUTES } from "@/constants/routes";
+import { STORAGE_KEYS } from "@/constants/system";
+import { EDIT } from "@/constants/employee";
 
 /**
  * Hook xử lý logic cho màn hình chi tiết nhân viên (ADM003).
@@ -38,8 +42,8 @@ export const useADM003 = () => {
   const fetchEmployeeDetail = useCallback(async () => {
     // Nếu không có employeeId trong URL, chuyển sang màn hình lỗi hệ thống
     if (!employeeId) {
-      sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', Messages.MSG_INVALID_EMPLOYEE_ID);
-      router.push('/employees/systemError');
+      sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, Messages.MSG_INVALID_EMPLOYEE_ID);
+      router.push(ROUTES.SYSTEM_ERROR);
       return;
     }
 
@@ -47,14 +51,17 @@ export const useADM003 = () => {
       setIsLoading(true);
       const data = await employeeApi.getEmployeeById(employeeId);
       setEmployee(data);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching employee detail:", error);
-      // Chuyển hướng sang màn hình lỗi hệ thống khi có lỗi từ server kèm message
-      const backendError = error.response?.data?.message;
-      const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SERVER_CONNECTION;
       
-      sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
-      router.push('/employees/systemError');
+      let errorMsg = Messages.MSG_ERROR_SERVER_CONNECTION;
+      if (isAxiosError(error)) {
+        const backendError = error.response?.data?.message;
+        errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SERVER_CONNECTION;
+      }
+      
+      sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, errorMsg);
+      router.push(ROUTES.SYSTEM_ERROR);
     } finally {
       setIsLoading(false);
     }
@@ -76,15 +83,18 @@ export const useADM003 = () => {
         const response = await employeeApi.deleteEmployee(employeeId);
         // TH API trả về trạng thái thành công: di chuyển sang MH complete với mã message được trả về từ API
         const successMsg = formatBackendMessage(response.message);
-        router.push(`/employees/adm006?msg=${encodeURIComponent(successMsg)}`);
-      } catch (error: any) {
+        router.push(`${ROUTES.ADM006}?msg=${encodeURIComponent(successMsg)}`);
+      } catch (error) {
         console.error("Error deleting employee:", error);
-        // TH API trả về lỗi hiển thị ở màn SystemError với mã message lấy từ API
-        const backendError = error.response?.data?.message;
-        const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_DELETE_FAILED;
+        
+        let errorMsg = Messages.MSG_ERROR_DELETE_FAILED;
+        if (isAxiosError(error)) {
+          const backendError = error.response?.data?.message;
+          errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_DELETE_FAILED;
+        }
 
-        sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
-        router.push('/employees/systemError');
+        sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, errorMsg);
+        router.push(ROUTES.SYSTEM_ERROR);
       }
     }
   };
@@ -96,14 +106,14 @@ export const useADM003 = () => {
   const handleEdit = () => {
     if (!employeeId) return;
     const query = returnQueryString ? `&${returnQueryString}` : "";
-    router.push(`/employees/adm004?id=${employeeId}&mode=edit${query}`);
+    router.push(`${ROUTES.ADM004}?id=${employeeId}&mode=${EDIT}${query}`);
   };
 
   /**
    * Hàm xử lý quay lại màn hình danh sách nhân viên (ADM002).
    */
   const handleBack = () => {
-    router.push(returnQueryString ? `/employees/adm002?${returnQueryString}` : "/employees/adm002");
+    router.push(returnQueryString ? `${ROUTES.ADM002}?${returnQueryString}` : ROUTES.ADM002);
   };
 
   return {

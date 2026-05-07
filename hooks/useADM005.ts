@@ -7,17 +7,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios, { isAxiosError } from 'axios';
 import { certificationApi } from '@/lib/api/certifications';
 import { departmentApi } from '@/lib/api/department';
 import { employeeApi } from '@/lib/api/employee';
 import { Certification } from '@/types/certifications';
 import { Department } from '@/types/department';
 import * as Messages from '@/constants/messages';
-import {
-  clearEmployeeFormDataStorage,
-  loadEmployeeFormDataStorage
-} from '@/lib/storage/employee';
+import { clearEmployeeFormDataStorage, loadEmployeeFormDataStorage } from '@/lib/storage/employee';
 import { formatBackendMessage } from '@/lib/utils/message';
+import { ROUTES } from '@/constants/routes';
+import { STORAGE_KEYS, HTTP_STATUS } from '@/constants/system';
+import { EDIT } from '@/constants/employee';
+import { ER022 } from '@/constants/messages';
 
 /**
  * Hook quản lý logic và hành vi cho màn hình xác nhận thông tin nhân viên (ADM005).
@@ -32,11 +34,12 @@ export const useADM005 = () => {
   const [serverErrorMessage, setServerErrorMessage] = useState('');
 
   /**
-   * Điều hướng về màn nhập liệu nếu không có dữ liệu trong storage (truy cập trực tiếp URL).
+   * Điều hướng về màn hình lỗi hệ thống nếu không có dữ liệu trong storage (truy cập trực tiếp URL).
    */
   useEffect(() => {
     if (!storedSessionData) {
-      router.replace('/employees/adm004');
+      sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_CODE, ER022);
+      router.replace(ROUTES.SYSTEM_ERROR);
     }
   }, [storedSessionData, router]);
 
@@ -56,10 +59,10 @@ export const useADM005 = () => {
         if (!isMounted) return;
 
         setDepartments(
-          String(departmentResponse.code) === '200' ? departmentResponse.departments : []
+          String(departmentResponse.code) === String(HTTP_STATUS.OK) ? departmentResponse.departments : []
         );
         setCertifications(
-          String(certificationResponse.code) === '200'
+          String(certificationResponse.code) === String(HTTP_STATUS.OK)
             ? certificationResponse.certifications
             : []
         );
@@ -124,28 +127,37 @@ export const useADM005 = () => {
     try {
       const { formData, mode } = storedSessionData;
       const response =
-        mode === 'edit'
+        mode === EDIT
           ? await employeeApi.updateEmployee(formData)
           : await employeeApi.addEmployee(formData);
 
-      if (String(response.code) === '200') {
+      if (String(response.code) === String(HTTP_STATUS.OK)) {
         clearEmployeeFormDataStorage();
         // Thành công: Dịch mã MSG00x
         const successMsg = formatBackendMessage(response.message);
-        router.push(`/employees/adm006?msg=${encodeURIComponent(successMsg)}`);
+        router.push(`${ROUTES.ADM006}?msg=${encodeURIComponent(successMsg)}`);
       } else {
         // Lỗi nghiệp vụ (200 OK nhưng code != 200)
         const errorMsg = formatBackendMessage(response.message) || Messages.MSG_ERROR_SAVE_EMPLOYEE;
         setServerErrorMessage(errorMsg);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving employee:', error);
-      // Lỗi hệ thống (500)
-      const backendError = error.response?.data?.message;
-      const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
       
-      sessionStorage.setItem('SYSTEM_ERROR_MESSAGE', errorMsg);
-      router.push('/employees/systemError');
+      let errorMsg = Messages.MSG_ERROR_SYSTEM;
+      let errorCode = '';
+
+      if (isAxiosError(error)) {
+        const backendError = error.response?.data?.message;
+        errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
+        errorCode = backendError?.code || '';
+      }
+      
+      sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, errorMsg);
+      if (errorCode) {
+        sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_CODE, errorCode);
+      }
+      router.push(ROUTES.SYSTEM_ERROR);
     } finally {
       setIsSubmitting(false);
     }
@@ -155,12 +167,12 @@ export const useADM005 = () => {
    * Xử lý quay lại màn hình nhập liệu (ADM004).
    */
   const handleCancel = useCallback(() => {
-    if (storedSessionData?.mode === 'edit' && storedSessionData.employeeId) {
-      router.push(`/employees/adm004?id=${storedSessionData.employeeId}&mode=back`);
+    if (storedSessionData?.mode === EDIT && storedSessionData.employeeId) {
+      router.push(`${ROUTES.ADM004}?id=${storedSessionData.employeeId}&mode=back`);
       return;
     }
 
-    router.push('/employees/adm004?mode=back');
+    router.push(`${ROUTES.ADM004}?mode=back`);
   }, [storedSessionData, router]);
 
   return {

@@ -1,17 +1,18 @@
+/**
+ * Copyright(C) 2026 Luvina
+ * employee.ts, 24/04/2024 tranledat
+ */
+
 import { z } from 'zod';
-import {
-  ER012,
-  ER017,
-  ER019,
-} from '@/constants/messageCode';
-import * as Messages from '@/constants/messages';
+import * as MessageCode from '@/constants/messages';
+import { formatValidationMessage } from '@/lib/utils/message';
 
 /**
  * Validate tên nhân viên trong form tìm kiếm ADM002.
  */
 export function validateEmployeeName(value: string): string {
   if (value.length > 125) {
-    return 'Employee name must be 125 characters or fewer.';
+    return formatValidationMessage(MessageCode.ER006, '氏名', '125');
   }
 
   if (value.length > 0 && value.trim().length === 0) {
@@ -28,25 +29,30 @@ export function sanitizeEmployeeNameInput(value: string): string {
   return value.replace(/^\s+/, '').replace(/\s{2,}/g, ' ');
 }
 
+/**
+ * Schema validation cho thông tin nhân viên (ADM004).
+ */
 export const employeeSchema = z
   .object({
     // 1.1 Validate parameter [employeeLoginId] (Tên tài khoản)
     employeeLoginId: z
       .string()
-      .min(1, Messages.VALIDATE_LOGIN_ID_REQUIRED)
-      .max(50, Messages.VALIDATE_LOGIN_ID_MAX)
-      .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, ER019),
+      .trim()
+      .min(1, formatValidationMessage(MessageCode.ER001, 'アカウント名'))
+      .max(50, formatValidationMessage(MessageCode.ER006, 'アカウント名', '50'))
+      .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, MessageCode.ER019),
 
-    // 1.2 Validate parameter [departmentId] (Phòng ban/Nhóm)
-    departmentId: z.string().min(1, Messages.VALIDATE_GROUP_REQUIRED),
+    // 1.2 Phòng ban/Nhóm
+    departmentId: z.string().min(1, formatValidationMessage(MessageCode.ER002, 'グループ')),
 
     // 1.2 Validate parameter [employeeName] (Họ tên)
     // - min(1): Kiểm tra bắt buộc nhập (lỗi ER001)
     // - max(125): Giới hạn độ dài tối đa 125 ký tự (lỗi ER006)
     employeeName: z
       .string()
-      .min(1, Messages.VALIDATE_NAME_REQUIRED)
-      .max(125, Messages.VALIDATE_NAME_MAX),
+      .trim()
+      .min(1, formatValidationMessage(MessageCode.ER001, '氏名'))
+      .max(125, formatValidationMessage(MessageCode.ER006, '氏名', '125')),
 
     // 1.3 Validate parameter [employeeNameKana] (Họ tên Katakana)
     // - min(1): Bắt buộc nhập (lỗi ER001)
@@ -54,12 +60,13 @@ export const employeeSchema = z
     // - regex(...): Chỉ cho phép các ký tự Katakana toàn góc (ァ-ン, ヴ, ー) (lỗi ER009)
     employeeNameKana: z
       .string()
-      .min(1, Messages.VALIDATE_KANA_REQUIRED)
-      .max(125, Messages.VALIDATE_KANA_MAX)
-      .regex(/^[\uFF61-\uFF9F]+$/, Messages.VALIDATE_KANA_FORMAT),
+      .trim()
+      .min(1, formatValidationMessage(MessageCode.ER001, 'カタカナ氏名'))
+      .max(125, formatValidationMessage(MessageCode.ER006, 'カタカナ氏名', '125'))
+      .regex(/^[\uFF61-\uFF9F]+$/, formatValidationMessage(MessageCode.ER009, 'カタカナ氏名')),
 
-    // 1.4 Validate parameter [employeeBirthDate] (Ngày sinh)
-    employeeBirthDate: z.string().min(1, Messages.VALIDATE_BIRTH_DATE_REQUIRED),
+    // 1.4 Ngày sinh
+    employeeBirthDate: z.string().min(1, formatValidationMessage(MessageCode.ER001, '生年月日')),
 
     // 1.5 Validate parameter [employeeEmail] (Địa chỉ Email)
     // - min(1): Bắt buộc nhập (lỗi ER001)
@@ -67,9 +74,10 @@ export const employeeSchema = z
     // - email(): Kiểm tra đúng định dạng email (lỗi ER005)
     employeeEmail: z
       .string()
-      .min(1, Messages.VALIDATE_EMAIL_REQUIRED)
-      .max(125, Messages.VALIDATE_EMAIL_MAX)
-      .email(Messages.VALIDATE_EMAIL_FORMAT),
+      .trim()
+      .min(1, formatValidationMessage(MessageCode.ER001, 'メールアドレス'))
+      .max(125, formatValidationMessage(MessageCode.ER006, 'メールアドレス', '125'))
+      .email(formatValidationMessage(MessageCode.ER005, 'メールアドレス', 'メールアドレス')),
 
     // 1.6 Validate parameter [employeeTelephone] (Số điện thoại)
     // - min(1): Bắt buộc nhập (lỗi ER001)
@@ -77,18 +85,18 @@ export const employeeSchema = z
     // - regex(...): Chỉ cho phép ký tự 1 byte  (lỗi ER008)
     employeeTelephone: z
       .string()
-      .min(1, Messages.VALIDATE_TEL_REQUIRED)
-      .max(50, Messages.VALIDATE_TEL_MAX)
-      .regex(/^[\x20-\x7E]+$/, Messages.VALIDATE_TEL_FORMAT),
+      .trim()
+      .min(1, formatValidationMessage(MessageCode.ER001, '電話番号'))
+      .max(50, formatValidationMessage(MessageCode.ER006, '電話番号', '50'))
+      .regex(/^[\x20-\x7E]+$/, formatValidationMessage(MessageCode.ER008, '電話番号')),
 
-    // 1.7 Validate parameter [employeeLoginPassword] (Mật khẩu)
+    // 1.7 Mật khẩu
     employeeLoginPassword: z
       .string()
-      .max(50, Messages.VALIDATE_PASSWORD_LENGTH),
+      .max(50, formatValidationMessage(MessageCode.ER006, 'パスワード', '50')),
 
-    // 1.8 Validate parameter [employeeLoginRePassword] (Xác nhận mật khẩu)
-    employeeLoginPasswordConfirm: z
-      .string(),
+    // 1.8 Xác nhận mật khẩu
+    employeeLoginPasswordConfirm: z.string(),
 
     // Các trường của phần Tiếng Nhật 
     // Đây là optional (có thể không chọn)
@@ -99,18 +107,18 @@ export const employeeSchema = z
     employeeCertificationScore: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    // 1.7.1 Kiểm tra Mật khẩu bắt buộc và độ dài nếu là chế độ THÊM MỚI (không có employeeId)
+    // 1.7.1 Kiểm tra Mật khẩu bắt buộc và độ dài nếu là chế độ THÊM MỚI
     if (!data.employeeId) {
       if (!data.employeeLoginPassword) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: Messages.VALIDATE_PASSWORD_REQUIRED,
+          message: formatValidationMessage(MessageCode.ER001, 'パスワード'),
           path: ['employeeLoginPassword'],
         });
       } else if (data.employeeLoginPassword.length < 8) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: Messages.VALIDATE_PASSWORD_LENGTH,
+          message: formatValidationMessage(MessageCode.ER007, 'パスワード', '8', '50'),
           path: ['employeeLoginPassword'],
         });
       }
@@ -118,7 +126,7 @@ export const employeeSchema = z
       if (!data.employeeLoginPasswordConfirm) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: Messages.VALIDATE_RE_PASSWORD_REQUIRED,
+          message: formatValidationMessage(MessageCode.ER001, 'パスワード（確認）'),
           path: ['employeeLoginPasswordConfirm'],
         });
       }
@@ -129,7 +137,7 @@ export const employeeSchema = z
     if (data.employeeLoginPassword && data.employeeLoginPassword !== data.employeeLoginPasswordConfirm) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: ER017,
+        message: MessageCode.ER017,
         path: ['employeeLoginPasswordConfirm'],
       });
     }
@@ -142,7 +150,7 @@ export const employeeSchema = z
       if (!data.certificationStartDate) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: Messages.VALIDATE_CERT_START_DATE_REQUIRED,
+          message: formatValidationMessage(MessageCode.ER001, '資格交付日'),
           path: ['certificationStartDate'],
         });
       }
@@ -152,7 +160,7 @@ export const employeeSchema = z
       if (!data.certificationEndDate) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: Messages.VALIDATE_CERT_END_DATE_REQUIRED,
+          message: formatValidationMessage(MessageCode.ER001, '失効日'),
           path: ['certificationEndDate'],
         });
       }
@@ -166,7 +174,7 @@ export const employeeSchema = z
         if (end < start) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: ER012,
+            message: MessageCode.ER012,
             path: ['certificationEndDate'],
           });
         }
@@ -178,13 +186,19 @@ export const employeeSchema = z
       if (!data.employeeCertificationScore) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: Messages.VALIDATE_SCORE_REQUIRED,
+          message: formatValidationMessage(MessageCode.ER001, '点数'),
           path: ['employeeCertificationScore'],
         });
       } else if (!/^\d+$/.test(data.employeeCertificationScore)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: Messages.VALIDATE_SCORE_FORMAT,
+          message: formatValidationMessage(MessageCode.ER018, '点数'),
+          path: ['employeeCertificationScore'],
+        });
+      } else if (data.employeeCertificationScore.length > 3) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: formatValidationMessage(MessageCode.ER006, '点数', '3'),
           path: ['employeeCertificationScore'],
         });
       }

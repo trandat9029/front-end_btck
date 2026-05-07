@@ -141,9 +141,9 @@ function EmployeeInputForm() {
                 selected={getDateValue(formData.employeeBirthDate)}
                 onChange={(date: Date | null) => handleDateChange('employeeBirthDate', date)}
                 onBlur={() => handleFieldBlur('employeeBirthDate')}
-                dateFormat="yyyy-MM-dd"
+                dateFormat="yyyy/MM/dd"
                 className="form-control"
-                placeholderText="YYYY-MM-DD"
+                placeholderText="YYYY/MM/DD"
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
@@ -280,9 +280,9 @@ function EmployeeInputForm() {
                 selected={getDateValue(formData.certificationStartDate)}
                 onChange={(date: Date | null) => handleDateChange('certificationStartDate', date)}
                 onBlur={() => handleFieldBlur('certificationStartDate')}
-                dateFormat="yyyy-MM-dd"
+                dateFormat="yyyy/MM/dd"
                 className="form-control"
-                placeholderText="YYYY-MM-DD"
+                placeholderText="YYYY/MM/DD"
                 disabled={!isCertificationSelected}
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
@@ -304,9 +304,9 @@ function EmployeeInputForm() {
                 selected={getDateValue(formData.certificationEndDate)}
                 onChange={(date: Date | null) => handleDateChange('certificationEndDate', date)}
                 onBlur={() => handleFieldBlur('certificationEndDate')}
-                dateFormat="yyyy-MM-dd"
+                dateFormat="yyyy/MM/dd"
                 className="form-control"
-                placeholderText="YYYY-MM-DD"
+                placeholderText="YYYY/MM/DD"
                 disabled={!isCertificationSelected}
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
@@ -328,6 +328,7 @@ function EmployeeInputForm() {
               onChange={(event) => handleFieldChange('employeeCertificationScore', event.target.value)}
               onBlur={() => handleFieldBlur('employeeCertificationScore')}
               disabled={!isCertificationSelected}
+              maxLength={3}
             />
             {errors.employeeCertificationScore && <div className="error-message mt-1">{errors.employeeCertificationScore.message}</div>}
           </div>
