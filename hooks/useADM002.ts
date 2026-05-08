@@ -42,7 +42,7 @@ export const useADM002 = () => {
   const [employees, setEmployees] = useState<EmployeeListItem[]>([]); // Danh sách nhân viên hiển thị ở bảng
   const [totalRecords, setTotalRecords] = useState(0); // Tổng số bản ghi tìm thấy (để tính phân trang)
   const [isLoading, setIsLoading] = useState(true); // Trạng thái đang tải dữ liệu
-  
+
   // --- 2. State quản lý thông báo lỗi (UI) ---
   const [errorMessage, setErrorMessage] = useState(''); // Lỗi chung khi lấy danh sách nhân viên
   const [departmentErrorMessage, setDepartmentErrorMessage] = useState(''); // Lỗi khi lấy danh mục phòng ban
@@ -69,12 +69,12 @@ export const useADM002 = () => {
     if (state.employeeName.trim()) params.set('employeeName', state.employeeName.trim());
     if (state.departmentId) params.set('departmentId', state.departmentId);
     if (state.page > 1) params.set('page', String(state.page));
-    
+
     // Chỉ đẩy lên URL nếu giá trị sắp xếp khác với mặc định (để URL gọn gàng)
     if (state.ordEmployeeName !== DEFAULT_SORTS.ordEmployeeName) params.set('ordEmployeeName', state.ordEmployeeName);
     if (state.ordCertificationName !== DEFAULT_SORTS.ordCertificationName) params.set('ordCertificationName', state.ordCertificationName);
     if (state.ordEndDate !== DEFAULT_SORTS.ordEndDate) params.set('ordEndDate', state.ordEndDate);
-    
+
     return params.toString();
   }, []);
 
@@ -289,6 +289,7 @@ export const useADM002 = () => {
    */
   useEffect(() => {
     const initialState: SearchState = {
+
       employeeName: searchParams.get('employeeName') ?? '',
       departmentId: searchParams.get('departmentId') ?? '',
       page: (() => {
@@ -301,7 +302,7 @@ export const useADM002 = () => {
     };
 
     void fetchDepartments(); // Lấy danh mục phòng ban
-    
+    console.log("initialState");
     // Đồng bộ vào State của React
     setEmployeeName(initialState.employeeName);
     setDepartmentId(initialState.departmentId);
@@ -309,6 +310,7 @@ export const useADM002 = () => {
     setEmployeeNameSort(initialState.ordEmployeeName);
     setCertificationSort(initialState.ordCertificationName);
     setEndDateSort(initialState.ordEndDate);
+
 
     // Thực hiện lấy dữ liệu lần đầu
     void fetchEmployees(initialState);
@@ -326,7 +328,7 @@ export const useADM002 = () => {
   }, [currentPage, handlePageChange, totalPages]);
 
   // --- 6. Logic UI hiển thị (Computed States) ---
-  
+
   /**
    * Mảng chứa các số trang sẽ hiển thị ở thanh Pagination (ví dụ: [1, 2, 3, 4, 10]).
    */

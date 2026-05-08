@@ -1,6 +1,6 @@
 'use client';
 
-import { parseISO } from 'date-fns';
+import React, { useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useADM004 } from '@/hooks/useADM004';
@@ -13,6 +13,7 @@ function EmployeeInputForm() {
     isLoadingCertifications,
     formData,
     isCertificationSelected,
+    isDataReady,
     errors,
     mode,
     handleFieldChange,
@@ -21,6 +22,16 @@ function EmployeeInputForm() {
     handleConfirm,
     handleBack,
   } = useADM004();
+
+  // Ref để auto focus vào input đầu tiên
+  const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // Effect để thực hiện auto focus khi form đã sẵn sàng và ở chế độ ADD
+  useEffect(() => {
+    if (isDataReady && mode === 'add' && firstInputRef.current) {
+      firstInputRef.current.focus();
+    }
+  }, [isDataReady, mode]);
 
   const getDateValue = (value: string | undefined) => {
     if (!value) {
@@ -43,7 +54,9 @@ function EmployeeInputForm() {
           <div className="col-sm col-sm-10">
             <input
               type="text"
+              id="employeeLoginId"
               className="form-control"
+              ref={firstInputRef}
               value={formData.employeeLoginId}
               onChange={(event) =>
                 // Khi gõ sẽ gọi hàm handleFieldChange để vừa update state, vừa báo cho Zod Validate

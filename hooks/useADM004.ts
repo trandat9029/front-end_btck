@@ -88,6 +88,7 @@ export const useADM004 = () => {
     setValue,
     trigger,
     setError,
+    clearErrors,
     reset,
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
@@ -283,7 +284,14 @@ export const useADM004 = () => {
    * Map message từ backend về đúng field trong form
    */
   const getFieldFromBackendValidateMessage = useCallback((message?: MessageResponse | null): keyof EmployeeFormData | null => {
-    let label = (message?.params?.[0] as string | undefined) || '';
+    if (!message) return null;
+
+    // Trường hợp đặc biệt: Các lỗi logic nghiệp vụ không đi kèm tên trường trong params
+    if (message.code === 'ER012') {
+      return 'certificationEndDate';
+    }
+
+    let label = (message.params?.[0] as string | undefined) || '';
     // Loại bỏ dấu ngoặc vuông nếu có (ví dụ: [アカウント名] -> アカウント名)
     label = label.replace(/^\[/, '').replace(/\]$/, '');
     return (LABEL_TO_FIELD_MAP[label] as keyof EmployeeFormData) || null;
@@ -304,22 +312,55 @@ export const useADM004 = () => {
     }
   }, [getFieldFromBackendValidateMessage, setError]);
   /**
+   * Danh sách các trường liên quan đến chứng chỉ để trigger validate cùng lúc
+   */
+  const CERT_FIELDS = useMemo(() => [
+    'certificationId',
+    'certificationStartDate',
+    'certificationEndDate',
+    'employeeCertificationScore'
+  ] as const, []);
+
+  /**
    * Xử lý thay đổi giá trị trường.
    * @param field Tên trường
    * @param value Giá trị
    */
   const handleFieldChange = useCallback((field: keyof EmployeeFormData, value: string | number) => {
     updateFormField(field, value as any);
-    setValue(field, value as any, { shouldValidate: true });
-  }, [updateFormField, setValue]);
+    
+    if (field === 'certificationId' && value === '') {
+      setValue('certificationId', '');
+      setValue('certificationStartDate', '');
+      setValue('certificationEndDate', '');
+      setValue('employeeCertificationScore', '');
+      // Khi xóa chứng chỉ, xóa các lỗi liên quan
+      CERT_FIELDS.forEach(f => clearErrors(f as any));
+    } else {
+      setValue(field, value as any);
+    }
+
+    // Nếu thay đổi bất kỳ trường nào trong nhóm chứng chỉ, trigger validate cả nhóm
+    if (CERT_FIELDS.includes(field as any)) {
+      trigger(CERT_FIELDS as any);
+    } else {
+      // Các trường khác chỉ trigger chính nó
+      trigger(field as any);
+    }
+  }, [updateFormField, setValue, trigger, clearErrors, CERT_FIELDS]);
 
   /**
    * Xử lý sự kiện blur.
    * @param field Tên trường
    */
   const handleFieldBlur = useCallback((field: keyof EmployeeFormData) => {
-    trigger(field);
-  }, [trigger]);
+    // Nếu blur khỏi nhóm chứng chỉ, trigger validate cả nhóm để chạy superRefine
+    if (CERT_FIELDS.includes(field as any)) {
+      trigger(CERT_FIELDS as any);
+    } else {
+      trigger(field as any);
+    }
+  }, [trigger, CERT_FIELDS]);
 
   /**
    * Xử lý thay đổi ngày tháng.
