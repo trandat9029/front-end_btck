@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios, { isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { employeeSchema } from '@/lib/validation/employee';
 import { ADD, EDIT, VALIDATE_STEP_INPUT } from '@/constants/employee';
 import { certificationApi } from '@/lib/api/certifications';
@@ -30,7 +30,7 @@ import {
   clearEmployeeFormDataStorage
 } from '@/lib/storage/employee';
 import { formatBackendMessage } from '@/lib/utils/message';
-import { LABEL_TO_FIELD_MAP, ERROR_MESSAGES } from '@/constants/messages';
+import { LABEL_TO_FIELD_MAP } from '@/constants/messages';
 
 /**
  * Hook quản lý logic cho màn hình ADM004 (Đăng ký/Chỉnh sửa nhân viên).
@@ -39,15 +39,23 @@ import { LABEL_TO_FIELD_MAP, ERROR_MESSAGES } from '@/constants/messages';
 export const useADM004 = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // Lấy employeeId từ URL để xác định đang Edit nhân viên nào
   const rawEmployeeId = searchParams.get('id');
+  
+  // Kiểm tra xem có phải quay về từ màn ADM005 (xác nhận) không
   const isBack = searchParams.get('mode') === 'back';
 
+  // Chuyển ID sang kiểu Number, nếu không hợp lệ thì để undefined
   const employeeId =
     rawEmployeeId && /^\d+$/.test(rawEmployeeId)
       ? Number(rawEmployeeId)
       : undefined;
+
+  // Xác định chế độ: Nếu có ID thì là EDIT (Sửa), không có thì là ADD (Thêm mới)
   const mode: EmployeeFormMode = employeeId ? EDIT : ADD;
 
+  // Lưu lại các tham số tìm kiếm cũ để khi nhấn "Back" quay về đúng trang danh sách cũ
   const returnQueryString = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete('id');
@@ -55,13 +63,20 @@ export const useADM004 = () => {
     return params.toString();
   }, [searchParams]);
 
+  // Danh sách Phòng ban (Master Data) để hiển thị vào ô Select
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
   const [departmentErrorMessage, setDepartmentErrorMessage] = useState('');
+
+  // Danh sách Chứng chỉ (Master Data) để hiển thị vào ô Select
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [isLoadingCertifications, setIsLoadingCertifications] = useState(true);
   const [certificationErrorMessage, setCertificationErrorMessage] = useState('');
+
+  // Dữ liệu chính của Form nhân viên
   const [formData, setFormData] = useState<EmployeeFormData>(createEmptyEmployeeFormData);
+
+  // Cờ báo hiệu khi nào TẤT CẢ dữ liệu (Master + Detail) đã nạp xong để bắt đầu hiển thị Form
   const [isDataReady, setIsDataReady] = useState(false);
 
   // Khởi tạo React Hook Form
@@ -103,37 +118,45 @@ export const useADM004 = () => {
 
         if (!isMounted) return;
 
-        // Cập nhật Master Data
+        // Bước 3: Cập nhật dữ liệu danh mục vào State
+        // Kiểm tra mã trả về từ API (Phòng ban)
         if (String(deptRes.code) === String(HTTP_STATUS.OK)) {
           setDepartments(deptRes.departments);
         } else {
+          // Nếu lỗi, hiển thị thông báo lỗi cụ thể hoặc lỗi mặc định
           setDepartmentErrorMessage(deptRes.message || Messages.MSG_ERROR_FETCH_DEPARTMENTS);
         }
 
+        // Kiểm tra mã trả về từ API (Chứng chỉ)
         if (String(certRes.code) === String(HTTP_STATUS.OK)) {
           setCertifications(certRes.certifications);
         } else {
           setCertificationErrorMessage(certRes.message || Messages.MSG_ERROR_FETCH_CERTIFICATIONS);
         }
 
-        // 3. Xác định Dữ liệu Form ban đầu (Sử dụng cấu trúc ưu tiên rõ ràng)
+        // Bước 4: Quyết định bộ dữ liệu nào sẽ được đưa vào Form (Logic ưu tiên)
         let initialData: EmployeeFormData = createEmptyEmployeeFormData();
+        // Lấy dữ liệu tạm thời từ SessionStorage (nếu có)
         const storedSessionData = loadEmployeeFormDataStorage();
 
-        // Kiểm tra xem dữ liệu trong storage có khớp với ngữ cảnh hiện tại (ID và Mode) không
+        // Kiểm tra xem dữ liệu trong storage có khớp với nhân viên và chế độ (Add/Edit) hiện tại không
+        // Điều này cực kỳ quan trọng để tránh việc lấy nhầm dữ liệu của nhân viên khác hoặc của lần nhập trước đó
         const isStorageMatched = storedSessionData &&
           storedSessionData.mode === mode &&
           storedSessionData.employeeId === employeeId;
 
+        // TRƯỜNG HỢP 1: Người dùng vừa ở màn xác nhận (ADM005) nhấn "Quay lại"
+        // Lúc này ta PHẢI lấy lại dữ liệu họ vừa nhập trong Storage để hiển thị lại
         if (isStorageMatched && isBack) {
-          // TRƯỜNG HỢP 1: Chắc chắn là quay lại từ ADM005 (có isBack) -> Lấy từ Storage
           initialData = storedSessionData.formData;
-        } else if (mode === EDIT && employeeId) {
-          // TRƯỜNG HỢP 2: Chế độ Edit nhưng không có dữ liệu storage khớp -> Lấy từ API
+        } 
+        // TRƯỜNG HỢP 2: Đang ở chế độ Chỉnh sửa (EDIT) và vào trang lần đầu (không phải quay lại từ ADM005)
+        // Ta cần gọi API để lấy dữ liệu mới nhất của nhân viên đó từ Database
+        else if (mode === EDIT && employeeId) {
           try {
             const employeeDetail = await employeeApi.getEmployeeById(employeeId);
             if (employeeDetail) {
-              const cert = employeeDetail.certifications?.[0];
+              const cert = employeeDetail.certifications?.[0]; // Lấy chứng chỉ đầu tiên (nếu có)
               initialData = {
                 employeeId: employeeDetail.employeeId,
                 employeeName: employeeDetail.employeeName,
@@ -142,7 +165,7 @@ export const useADM004 = () => {
                 employeeEmail: employeeDetail.employeeEmail,
                 employeeTelephone: employeeDetail.employeeTelephone,
                 employeeLoginId: employeeDetail.employeeLoginId,
-                employeeLoginPassword: '',
+                employeeLoginPassword: '', // Mật khẩu không trả về từ API vì lý do bảo mật
                 employeeLoginPasswordConfirm: '',
                 departmentId: String(employeeDetail.departmentId),
                 certificationId: cert ? String(cert.certificationId) : '',
@@ -152,6 +175,7 @@ export const useADM004 = () => {
               };
             }
           } catch (error) {
+            // Nếu lỗi khi lấy chi tiết nhân viên (ví dụ ID không tồn tại) -> Chuyển hướng sang trang báo lỗi hệ thống
             console.error('Error fetching employee detail for edit:', error);
             let errorMsg = Messages.MSG_ERROR_SYSTEM;
             let errorCode = '';
@@ -170,6 +194,8 @@ export const useADM004 = () => {
             return;
           }
         }
+        // TRƯỜNG HỢP 3: Chế độ Thêm mới (ADD) 
+        // -> initialData sẽ mặc định là bộ dữ liệu trống (createEmptyEmployeeFormData)
 
         // Xóa storage nếu không phải quay lại từ màn ADM005 (tức là F5 reload hoặc vào mới từ ADM002)
         if (!isBack) {
@@ -234,15 +260,6 @@ export const useADM004 = () => {
   );
 
 
-  const selectedCertification = useMemo(
-    () =>
-      certifications.find(
-        (certification) =>
-          String(certification.certificationId) === formData.certificationId
-      ) ?? null,
-    [certifications, formData.certificationId]
-  );
-
   const isCertificationSelected = formData.certificationId !== '';
 
   /**
@@ -273,10 +290,19 @@ export const useADM004 = () => {
   }, []);
 
   /**
-   * Gọi API validate dữ liệu ở Backend.
-   * @return Danh sách lỗi server
+   * Xử lý và hiển thị lỗi từ Backend lên Form
    */
+  const handleBackendValidationError = useCallback((message?: MessageResponse | null) => {
+    const field = getFieldFromBackendValidateMessage(message);
+    const errorMessage = formatBackendMessage(message) || Messages.MSG_ERROR_VALIDATE_FAILED;
 
+    if (field) {
+      setError(field as any, { type: 'server', message: errorMessage }, { shouldFocus: true });
+    } else {
+      // Nếu không map được vào field nào, hiển thị lỗi chung ở vùng thông báo
+      setDepartmentErrorMessage(errorMessage);
+    }
+  }, [getFieldFromBackendValidateMessage, setError]);
   /**
    * Xử lý thay đổi giá trị trường.
    * @param field Tên trường
@@ -316,45 +342,30 @@ export const useADM004 = () => {
       setDepartmentErrorMessage('');
       setCertificationErrorMessage('');
 
-      // 1. Gọi API validate dữ liệu ở Backend.
+      // 1. Gọi API validate dữ liệu ở Backend
       const response = await employeeApi.validateEmployee(formData, VALIDATE_STEP_INPUT);
 
       if (String(response.code) === String(HTTP_STATUS.OK)) {
-        // Validate thành công
+        // Validate thành công -> Lưu vào storage và sang màn xác nhận
         saveFormData();
         router.push(ROUTES.ADM005);
       } else {
-        // Lỗi nghiệp vụ (Mã lỗi ERxxx trả về từ validator)
-        const message = response.message;
-        const field = getFieldFromBackendValidateMessage(message);
-        const errorMessage = formatBackendMessage(message) || Messages.MSG_ERROR_VALIDATE_FAILED;
-
-        if (field) {
-          setError(field as any, { type: 'server', message: errorMessage }, { shouldFocus: true });
-        } else {
-          setDepartmentErrorMessage(errorMessage);
-        }
+        // Lỗi nghiệp vụ trả về từ API
+        handleBackendValidationError(response.message);
       }
     } catch (error) {
       console.error('Validation error:', error);
-      
+
       if (isAxiosError(error)) {
         const status = error.response?.status;
+        const responseData = error.response?.data;
 
-        // Nếu là lỗi validation trả về 500 kèm message object
-        if (status === 500 && error.response?.data?.message) {
-          const message = error.response.data.message;
-          const field = getFieldFromBackendValidateMessage(message);
-          const errorMessage = formatBackendMessage(message) || Messages.MSG_ERROR_VALIDATE_FAILED;
-
-          if (field) {
-            setError(field as any, { type: 'server', message: errorMessage }, { shouldFocus: true });
-          } else {
-            setDepartmentErrorMessage(errorMessage);
-          }
+        // Trường hợp server trả về lỗi validation (thường là 400 hoặc 500 kèm message object)
+        if ((status === 400 || status === 500) && responseData?.message) {
+          handleBackendValidationError(responseData.message);
         } else {
-          // Lỗi hệ thống thực sự
-          const backendError = error.response?.data?.message;
+          // Lỗi hệ thống nghiêm trọng
+          const backendError = responseData?.message;
           const errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SYSTEM;
           const errorCode = backendError?.code || '';
 
@@ -365,7 +376,7 @@ export const useADM004 = () => {
           router.push(ROUTES.SYSTEM_ERROR);
         }
       } else {
-        // Lỗi không phải từ Axios
+        // Các lỗi không xác định khác
         sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, Messages.MSG_ERROR_SYSTEM);
         router.push(ROUTES.SYSTEM_ERROR);
       }

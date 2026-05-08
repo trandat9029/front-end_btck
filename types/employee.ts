@@ -69,6 +69,34 @@ export interface GetEmployeesParams {
   ordEndDate?: SortOrder | '';
   offset?: number;
   limit?: number;
+  page?: number; // Thêm page để hỗ trợ tính toán phân trang
+}
+
+/**
+ * Trạng thái tìm kiếm lưu trữ trong Hook useADM002
+ * @author tranledat
+ */
+export interface SearchState {
+  employeeName: string;
+  departmentId: string;
+  page: number;
+  ordEmployeeName: SortOrder;
+  ordCertificationName: SortOrder;
+  ordEndDate: SortOrder;
+}
+
+/**
+ * Tham số dùng cho hàm fetch nội bộ trong Hook ADM002
+ * @author tranledat
+ */
+export interface FetchEmployeesParams {
+  employeeName: string;
+  departmentId: string;
+  page?: number;
+  limit?: number;
+  ordEmployeeName?: SortOrder;
+  ordCertificationName?: SortOrder;
+  ordEndDate?: SortOrder;
 }
 
 /**

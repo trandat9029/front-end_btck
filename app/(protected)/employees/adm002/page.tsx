@@ -4,8 +4,6 @@
  */
 "use client";
 
-import { useEffect, FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import EmployeeTable from "@/components/tables/EmployeeTable";
 import { MAX_LENGTH } from "@/constants/employee";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,7 +16,6 @@ import { useADM002 } from "@/hooks/useADM002";
  */
 export default function EmployeeListPage() {
   useAuth();
-  const router = useRouter();
 
   const {
     departments,
@@ -41,27 +38,10 @@ export default function EmployeeListPage() {
     handleSearch,
     handlePageChange,
     handleSortChange,
+    handleSearchSubmit,
+    handleNavigateToADM004,
   } = useADM002();
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      void handlePageChange(totalPages);
-    }
-  }, [currentPage, handlePageChange, totalPages]);
-
-  /**
-   * Submit form tìm kiếm của ADM002 và chuyển phần xử lý dữ liệu xuống hook.
-   */
-  const handleSearchSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await handleSearch(employeeName.trim());
-  };
-
-  const handleNavigateToADM004 = () => {
-    router.push(
-      searchStateQuery ? `/employees/adm004?${searchStateQuery}` : "/employees/adm004"
-    );
-  };
 
   return (
     <>
@@ -97,10 +77,10 @@ export default function EmployeeListPage() {
                   <option value="">全て</option>
                   {departments.map((department) => (
                     <option
-                      key={department.department_id}
-                      value={String(department.department_id)}
+                      key={department.departmentId}
+                      value={String(department.departmentId)}
                     >
-                      {department.department_name}
+                      {department.departmentName}
                     </option>
                   ))}
                 </select>

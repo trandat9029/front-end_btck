@@ -74,27 +74,31 @@ function EmployeeDetailForm() {
                     <div className="col-sm col-sm-10">{employee.employeeTelephone}</div>
                 </li>
 
-                {employee.certifications && employee.certifications.length > 0 && employee.certifications.map((cert, index) => (
-                    <React.Fragment key={cert.certificationId || index}>
+                {employee.certifications && employee.certifications.length > 0 && (
+                    <>
                         <li className="title mt-12"><a href="#!">日本語能力</a></li>
-                        <li className="form-group row d-flex">
-                            <label className="col-form-label col-sm-2">資格</label>
-                            <div className="col-sm col-sm-10">{cert.certificationName}</div>
-                        </li>
-                        <li className="form-group row d-flex">
-                            <label className="col-form-label col-sm-2">資格交付日</label>
-                            <div className="col-sm col-sm-10">{formatDateDisplay(cert.startDate)}</div>
-                        </li>
-                        <li className="form-group row d-flex">
-                            <label className="col-form-label col-sm-2">失効日</label>
-                            <div className="col-sm col-sm-10">{formatDateDisplay(cert.endDate)}</div>
-                        </li>
-                        <li className="form-group row d-flex">
-                            <label className="col-form-label col-sm-2">点数</label>
-                            <div className="col-sm col-sm-10">{cert.score}</div>
-                        </li>
-                    </React.Fragment>
-                ))}
+                        {employee.certifications.map((cert, index) => (
+                            <React.Fragment key={cert.certificationId || index}>
+                                <li className="form-group row d-flex">
+                                    <label className="col-form-label col-sm-2">資格</label>
+                                    <div className="col-sm col-sm-10">{cert.certificationName}</div>
+                                </li>
+                                <li className="form-group row d-flex">
+                                    <label className="col-form-label col-sm-2">資格交付日</label>
+                                    <div className="col-sm col-sm-10">{formatDateDisplay(cert.startDate)}</div>
+                                </li>
+                                <li className="form-group row d-flex">
+                                    <label className="col-form-label col-sm-2">失効日</label>
+                                    <div className="col-sm col-sm-10">{formatDateDisplay(cert.endDate)}</div>
+                                </li>
+                                <li className="form-group row d-flex">
+                                    <label className="col-form-label col-sm-2">点数</label>
+                                    <div className="col-sm col-sm-10">{cert.score}</div>
+                                </li>
+                            </React.Fragment>
+                        ))}
+                    </>
+                )}
 
                 <li className="form-group row d-flex">
                     <div className="btn-group col-sm col-sm-10 ml">
