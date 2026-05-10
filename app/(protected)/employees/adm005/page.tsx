@@ -5,22 +5,24 @@
 
 'use client';
 
+import React, { Suspense } from 'react';
 import EmployeeFormConfirm from '@/components/form/EmployeeFormConfirm';
 import { useAuth } from '@/hooks/useAuth';
 
 /**
- * Trang xác nhận thông tin nhân viên (ADM005).
- * Vai trò: Chỉ đóng vai trò entry point và kiểm tra quyền truy cập.
- * Mọi logic và hiển thị được đẩy vào Component và Hook.
- * @author tranledat
+ * ADM005Page: Màn hình kiểm tra lại dữ liệu trước khi lưu vào DB.
  */
-export default function EmployeeConfirmPage() {
+const ADM005Page = () => {
   // Kiểm tra quyền truy cập
   useAuth();
 
   return (
     <div className="row">
-      <EmployeeFormConfirm />
+      <Suspense fallback={<div className="p-3">読み込み中...</div>}>
+        <EmployeeFormConfirm />
+      </Suspense>
     </div>
   );
-}
+};
+
+export default ADM005Page;

@@ -1,19 +1,12 @@
 /**
- * Copyright(C) 2026 Luvina
- * [employee.ts], 26/04/2026 tranledat
+ * Copyright(C) 2024 Luvina
+ * employee.ts, 24/04/2024 tranledat
  */
 
-
-/**
- * Kiểu sắp xếp tăng dần hoặc giảm dần
- * @author tranledat
- */
+// Kiểu sắp xếp tăng dần hoặc giảm dần
 export type SortOrder = 'asc' | 'desc';
 
-/**
- * Một bản ghi nhân viên trả về từ API danh sách
- * @author tranledat
- */
+// Một bản ghi nhân viên trả về từ API danh sách
 export interface EmployeeListItem {
   employeeId: number;
   employeeName: string;
@@ -26,28 +19,19 @@ export interface EmployeeListItem {
   score: number | null;
 }
 
-/**
- * Thông tin lỗi của một trường dữ liệu từ Backend
- * @author tranledat
- */
+// Thông tin lỗi của một trường dữ liệu từ Backend
 export interface FieldError {
   field: string;
   message: string;
 }
 
-/**
- * Cấu trúc thông báo từ Backend (MessageResponse)
- * @author tranledat
- */
+// Cấu trúc thông báo từ Backend (MessageResponse)
 export interface MessageResponse {
   code: string;
   params: string[];
 }
 
-/**
- * Dữ liệu phản hồi từ API lấy danh sách nhân viên
- * @author tranledat
- */
+// Dữ liệu phản hồi từ API lấy danh sách nhân viên
 export interface EmployeeListApiResponse {
   code: string;
   totalRecords?: number;
@@ -57,25 +41,19 @@ export interface EmployeeListApiResponse {
   fieldErrors?: FieldError[];
 }
 
-/**
- * Tham số gửi lên API để lấy danh sách nhân viên
- * @author tranledat
- */
+// Tham số gửi lên API để lấy danh sách nhân viên
 export interface GetEmployeesParams {
-  employeeName?: string;
-  departmentId?: string;
-  ordEmployeeName?: SortOrder | '';
-  ordCertificationName?: SortOrder | '';
-  ordEndDate?: SortOrder | '';
+  employeeNameSearch?: string;
+  departmentIdFilter?: string;
+  employeeNameSort?: SortOrder | '';
+  certificationNameSort?: SortOrder | '';
+  endDateSort?: SortOrder | '';
   offset?: number;
   limit?: number;
-  page?: number; // Thêm page để hỗ trợ tính toán phân trang
+  page?: number; 
 }
 
-/**
- * Trạng thái tìm kiếm lưu trữ trong Hook useADM002
- * @author tranledat
- */
+// Trạng thái tìm kiếm lưu trữ trong Hook useADM002
 export interface SearchState {
   employeeName: string;
   departmentId: string;
@@ -85,10 +63,7 @@ export interface SearchState {
   ordEndDate: SortOrder;
 }
 
-/**
- * Tham số dùng cho hàm fetch nội bộ trong Hook ADM002
- * @author tranledat
- */
+// Tham số dùng cho hàm fetch nội bộ trong Hook ADM002
 export interface FetchEmployeesParams {
   employeeName: string;
   departmentId: string;
@@ -99,10 +74,7 @@ export interface FetchEmployeesParams {
   ordEndDate?: SortOrder;
 }
 
-/**
- * Dữ liệu form nhân viên dùng cho việc thêm mới hoặc cập nhật
- * @author tranledat
- */
+// Dữ liệu form nhân viên dùng cho việc thêm mới hoặc cập nhật
 export interface EmployeeFormData {
   employeeId?: number;
   employeeLoginId: string;
@@ -120,26 +92,17 @@ export interface EmployeeFormData {
   employeeCertificationScore?: string;
 }
 
-/**
- * Chế độ của form nhân viên
- * @author tranledat
- */
+// Chế độ của form nhân viên
 export type EmployeeFormMode = 'add' | 'edit';
 
-/**
- * Cấu trúc lưu trữ dữ liệu form nhân viên trong sessionStorage
- * @author tranledat
- */
+// Cấu trúc lưu trữ dữ liệu form nhân viên trong sessionStorage
 export interface EmployeeFormDataStorage {
   formData: EmployeeFormData;
   mode: EmployeeFormMode;
   employeeId?: number;
 }
 
-/**
- * Chi tiết chứng chỉ của nhân viên
- * @author tranledat
- */
+// Chi tiết chứng chỉ của nhân viên
 export interface EmployeeCertificationDetail {
   certificationId: number;
   certificationName: string;
@@ -148,10 +111,7 @@ export interface EmployeeCertificationDetail {
   score: number;
 }
 
-/**
- * Dữ liệu phản hồi chi tiết một nhân viên từ API
- * @author tranledat
- */
+// Dữ liệu phản hồi chi tiết một nhân viên từ API
 export interface EmployeeDetailResponse {
   code: string;
   employeeId: number;
@@ -166,10 +126,7 @@ export interface EmployeeDetailResponse {
   certifications: EmployeeCertificationDetail[];
 }
 
-/**
- * Dữ liệu phản hồi từ API cập nhật nhân viên
- * @author tranledat
- */
+// Dữ liệu phản hồi từ API cập nhật nhân viên
 export interface EmployeeUpdateApiResponse {
   code: string;
   employeeId: number;

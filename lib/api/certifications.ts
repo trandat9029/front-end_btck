@@ -1,3 +1,8 @@
+/**
+ * Copyright(C) 2024 Luvina
+ * certifications.ts, 10/05/2026 tranledat
+ */
+
 import { apiClient } from './client';
 import type {
   Certification,
@@ -6,7 +11,9 @@ import type {
   NormalizedCertificationListResponse,
 } from '@/types/certifications';
 
-// Chuẩn hóa dữ liệu chứng chỉ từ nhiều định dạng response khác nhau về một cấu trúc thống nhất cho FE.
+/**
+ * normalizeCertifications: Chuẩn hóa dữ liệu chứng chỉ từ API về cấu trúc thống nhất cho Frontend.
+ */
 function normalizeCertifications(payload: CertificationListResponse): Certification[] {
   if (Array.isArray(payload.certifications)) {
     return payload.certifications.map((certification: CertificationApiItem) => ({
@@ -25,8 +32,13 @@ function normalizeCertifications(payload: CertificationListResponse): Certificat
   return [];
 }
 
+/**
+ * certificationApi: Các dịch vụ gọi API liên quan đến Chứng chỉ.
+ */
 export const certificationApi = {
-  // Gọi API lấy danh sách chứng chỉ và trả về dữ liệu đã được chuẩn hóa để UI sử dụng trực tiếp.
+  /**
+   * getCertifications: Lấy danh sách toàn bộ chứng chỉ Nhật ngữ.
+   */
   getCertifications: async (): Promise<NormalizedCertificationListResponse> => {
     const response = await apiClient.get<CertificationListResponse>('/certifications');
     const statusCode = response.data.code ?? response.data.status ?? response.status;

@@ -1,3 +1,8 @@
+/**
+ * Copyright(C) 2024 Luvina
+ * auth.ts, 24/04/2024 tranledat
+ */
+
 // Dữ liệu gửi lên khi đăng nhập
 export interface LoginRequest {
   username: string;
@@ -13,6 +18,4 @@ export interface LoginResponse {
 // Dữ liệu giải mã từ token xác thực
 export interface TokenPayload {
   exp: number;
-  // Các claim khác nếu cần
 }
-

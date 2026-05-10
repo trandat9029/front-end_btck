@@ -2,45 +2,60 @@
  * Copyright(C) [2026] - Luvina
  * [useADM003.ts], 28/04/2026 tranledat
  */
-"use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import axios, { isAxiosError } from "axios";
-import { employeeApi } from "@/lib/api/employee";
-import { EmployeeDetailResponse } from "@/types/employee";
-import * as Messages from "@/constants/messages";
-import { formatBackendMessage } from "@/lib/utils/message";
-import { ROUTES } from "@/constants/routes";
-import { STORAGE_KEYS } from "@/constants/system";
-import { EDIT } from "@/constants/employee";
+'use client';
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { isAxiosError } from 'axios';
+
+// --- Imports (Constants, APIs, Types) ---
+import { employeeApi } from '@/lib/api/employee';
+import { EmployeeDetailResponse } from '@/types/employee';
+import * as Messages from '@/constants/messages';
+import { formatBackendMessage } from '@/lib/utils/message';
+import { ROUTES } from '@/constants/routes';
+import { STORAGE_KEYS } from '@/constants/system';
+import { EDIT } from '@/constants/employee';
 
 /**
- * Hook xử lý logic cho màn hình chi tiết nhân viên (ADM003).
+ * Hook quản lý logic cho màn hình chi tiết nhân viên (ADM003).
+ * Bao gồm: Lấy thông tin chi tiết, xử lý xóa và chuyển hướng sang trang chỉnh sửa.
+ * 
  * @author tranledat
  */
 export const useADM003 = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const employeeIdStr = searchParams.get("id");
+
+  // --- 1. States & Configurations (Trạng thái và Cấu hình) ---
+
+  // Lấy ID nhân viên từ URL
+  const employeeIdStr = searchParams.get('id');
   const employeeId = employeeIdStr ? parseInt(employeeIdStr) : null;
 
+  // Chuỗi query để quay lại màn hình danh sách (ADM002) với đúng bộ lọc/phân trang cũ
   const returnQueryString = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete('id');
     return params.toString();
   }, [searchParams]);
 
+  // Dữ liệu chi tiết nhân viên
   const [employee, setEmployee] = useState<EmployeeDetailResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
+
+  // Trạng thái giao diện
+  const [uiState, setUiState] = useState({
+    isLoading: true, // Trạng thái đang tải dữ liệu
+  });
+
+  // --- 2. Lifecycle (Vòng đời dữ liệu) ---
 
   /**
-   * Hàm thực hiện lấy thông tin chi tiết nhân viên từ API.
-   * Sử dụng employeeId lấy từ URL để truy vấn dữ liệu.
+   * fetchEmployeeDetail: Lấy dữ liệu chi tiết nhân viên từ Server.
    */
   const fetchEmployeeDetail = useCallback(async () => {
-    // Nếu không có employeeId trong URL, chuyển sang màn hình lỗi hệ thống
+    // Nếu không có ID trong URL -> Đẩy sang trang lỗi hệ thống
     if (!employeeId) {
       sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, Messages.MSG_INVALID_EMPLOYEE_ID);
       router.push(ROUTES.SYSTEM_ERROR);
@@ -48,22 +63,13 @@ export const useADM003 = () => {
     }
 
     try {
-      setIsLoading(true);
+      setUiState({ isLoading: true });
       const data = await employeeApi.getEmployeeById(employeeId);
       setEmployee(data);
     } catch (error) {
-      console.error("Error fetching employee detail:", error);
-      
-      let errorMsg = Messages.MSG_ERROR_SERVER_CONNECTION;
-      if (isAxiosError(error)) {
-        const backendError = error.response?.data?.message;
-        errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_SERVER_CONNECTION;
-      }
-      
-      sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, errorMsg);
-      router.push(ROUTES.SYSTEM_ERROR);
+      handleProcessSystemError(error, Messages.MSG_ERROR_SERVER_CONNECTION);
     } finally {
-      setIsLoading(false);
+      setUiState({ isLoading: false });
     }
   }, [employeeId, router]);
 
@@ -71,57 +77,69 @@ export const useADM003 = () => {
     void fetchEmployeeDetail();
   }, [fetchEmployeeDetail]);
 
+  // --- 3. Handlers (Xử lý sự kiện) ---
+
   /**
-   * Hàm xử lý khi người dùng nhấn nút Xóa.
-   * Hiển thị xác nhận trước khi gọi API xóa nhân viên.
+   * handleDeleteClick: Xử lý khi nhấn nút "Xóa".
    */
-  const handleDelete = async () => {
+  const handleDeleteClick = useCallback(async () => {
     if (!employeeId) return;
 
-    if (confirm(Messages.MSG_CONFIRM_DELETE)) {
+    if (window.confirm(Messages.MSG_CONFIRM_DELETE)) {
       try {
         const response = await employeeApi.deleteEmployee(employeeId);
-        // TH API trả về trạng thái thành công: di chuyển sang MH complete với mã message được trả về từ API
+        // Thành công: Chuyển sang màn hình hoàn tất ADM006 kèm thông báo từ Backend
         const successMsg = formatBackendMessage(response.message);
         router.push(`${ROUTES.ADM006}?msg=${encodeURIComponent(successMsg)}`);
       } catch (error) {
-        console.error("Error deleting employee:", error);
-        
-        let errorMsg = Messages.MSG_ERROR_DELETE_FAILED;
-        if (isAxiosError(error)) {
-          const backendError = error.response?.data?.message;
-          errorMsg = formatBackendMessage(backendError) || Messages.MSG_ERROR_DELETE_FAILED;
-        }
-
-        sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, errorMsg);
-        router.push(ROUTES.SYSTEM_ERROR);
+        handleProcessSystemError(error, Messages.MSG_ERROR_DELETE_FAILED);
       }
     }
-  };
+  }, [employeeId, router]);
 
   /**
-   * Hàm điều hướng sang màn hình chỉnh sửa nhân viên (ADM004).
-   * Truyền theo ID nhân viên và mode là 'edit'.
+   * handleEditClick: Chuyển hướng sang màn hình nhập liệu (ADM004) ở chế độ EDIT.
    */
-  const handleEdit = () => {
+  const handleEditClick = useCallback(() => {
     if (!employeeId) return;
-    const query = returnQueryString ? `&${returnQueryString}` : "";
+    const query = returnQueryString ? `&${returnQueryString}` : '';
     router.push(`${ROUTES.ADM004}?id=${employeeId}&mode=${EDIT}${query}`);
-  };
+  }, [employeeId, returnQueryString, router]);
 
   /**
-   * Hàm xử lý quay lại màn hình danh sách nhân viên (ADM002).
+   * handleBackClick: Quay lại màn hình danh sách (ADM002).
    */
-  const handleBack = () => {
-    router.push(returnQueryString ? `${ROUTES.ADM002}?${returnQueryString}` : ROUTES.ADM002);
+  const handleBackClick = useCallback(() => {
+    const path = returnQueryString ? `${ROUTES.ADM002}?${returnQueryString}` : ROUTES.ADM002;
+    router.push(path);
+  }, [returnQueryString, router]);
+
+  // --- 4. Helpers (Các hàm bổ trợ) ---
+
+  /**
+   * handleProcessSystemError: Xử lý tập trung các lỗi hệ thống và điều hướng.
+   */
+  const handleProcessSystemError = (error: any, defaultMsg: string) => {
+    console.error('ADM003 System Error:', error);
+    let errorMsg = defaultMsg;
+
+    if (isAxiosError(error)) {
+      const backendError = error.response?.data?.message;
+      errorMsg = formatBackendMessage(backendError) || defaultMsg;
+    }
+
+    sessionStorage.setItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE, errorMsg);
+    router.push(ROUTES.SYSTEM_ERROR);
   };
 
   return {
+    // States
     employee,
-    isLoading,
-    errorMessage,
-    handleDelete,
-    handleEdit,
-    handleBack,
+    uiState,
+
+    // Handlers
+    handleDeleteClick,
+    handleEditClick,
+    handleBackClick,
   };
 };

@@ -7,8 +7,9 @@ import { ADD, EDIT, EMPLOYEE_FORM_DATA_STORAGE_KEY } from '@/constants/employee'
 import { EmployeeFormData, EmployeeFormDataStorage, EmployeeFormMode } from '@/types/employee';
 
 /**
- * Tạo dữ liệu mặc định rỗng cho toàn bộ form nhân viên.
- * @return Dữ liệu form nhân viên rỗng
+ * createEmptyEmployeeFormData: Khởi tạo đối tượng dữ liệu Form rỗng cho nhân viên.
+ * 
+ * @returns Đối tượng EmployeeFormData với các giá trị mặc định
  */
 export const createEmptyEmployeeFormData = (): EmployeeFormData => ({
   employeeLoginId: '',
@@ -28,11 +29,11 @@ export const createEmptyEmployeeFormData = (): EmployeeFormData => ({
 });
 
 /**
- * Tạo object data từ dữ liệu form và mode hiện tại để lưu storage.
+ * createEmployeeFormDataStorage: Đóng gói dữ liệu Form kèm Metadata để lưu vào Storage.
+ * 
  * @param formData Dữ liệu form hiện tại
- * @param mode Chế độ (ADD/EDIT)
+ * @param mode Chế độ thao tác (ADD/EDIT)
  * @param employeeId ID nhân viên (nếu có)
- * @return Đối tượng lưu trữ dữ liệu form
  */
 export const createEmployeeFormDataStorage = (
   formData: EmployeeFormData,
@@ -45,24 +46,23 @@ export const createEmployeeFormDataStorage = (
 });
 
 /**
- * Chuyển chuỗi JSON trong storage thành object data hợp lệ.
- * @param value Chuỗi JSON từ storage
- * @return Đối tượng dữ liệu đã parse hoặc null nếu không hợp lệ
+ * parseEmployeeFormDataStorage: Chuyển đổi chuỗi JSON từ Storage thành đối tượng dữ liệu hợp lệ.
+ * 
+ * @param value Chuỗi JSON cần parse
+ * @returns Đối tượng dữ liệu đã được xử lý hoặc null nếu không hợp lệ
  */
 export const parseEmployeeFormDataStorage = (
   value: string | null | undefined
 ): EmployeeFormDataStorage | null => {
-  if (!value) {
-    return null;
-  }
- 
+  if (!value) return null;
+
   try {
     const parsed = JSON.parse(value) as Partial<EmployeeFormDataStorage>;
- 
+
     if (!parsed || typeof parsed !== 'object' || !parsed.formData) {
       return null;
     }
- 
+
     return {
       formData: {
         ...createEmptyEmployeeFormData(),
@@ -74,34 +74,29 @@ export const parseEmployeeFormDataStorage = (
           ? parsed.employeeId
           : undefined,
     };
-  } catch {
+  } catch (error) {
+    console.error('Parse Storage Error:', error);
     return null;
   }
 };
 
 /**
- * Đọc dữ liệu đã lưu trong sessionStorage.
- * @return Đối tượng lưu trữ dữ liệu hoặc null
+ * loadEmployeeFormDataStorage: Đọc và parse dữ liệu từ sessionStorage.
  */
 export const loadEmployeeFormDataStorage = (): EmployeeFormDataStorage | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
- 
+  if (typeof window === 'undefined') return null;
+
   return parseEmployeeFormDataStorage(
     window.sessionStorage.getItem(EMPLOYEE_FORM_DATA_STORAGE_KEY)
   );
 };
 
 /**
- * Lưu dữ liệu vào sessionStorage.
- * @param dataStorage Dữ liệu cần lưu
+ * saveEmployeeFormDataStorage: Lưu dữ liệu vào sessionStorage dưới dạng chuỗi JSON.
  */
 export const saveEmployeeFormDataStorage = (dataStorage: EmployeeFormDataStorage) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
- 
+  if (typeof window === 'undefined') return;
+
   window.sessionStorage.setItem(
     EMPLOYEE_FORM_DATA_STORAGE_KEY,
     JSON.stringify(dataStorage)
@@ -109,12 +104,10 @@ export const saveEmployeeFormDataStorage = (dataStorage: EmployeeFormDataStorage
 };
 
 /**
- * Xóa dữ liệu khỏi sessionStorage.
+ * clearEmployeeFormDataStorage: Xóa dữ liệu Form nhân viên khỏi sessionStorage.
  */
 export const clearEmployeeFormDataStorage = () => {
-  if (typeof window === 'undefined') {
-    return;
-  }
- 
+  if (typeof window === 'undefined') return;
+
   window.sessionStorage.removeItem(EMPLOYEE_FORM_DATA_STORAGE_KEY);
 };

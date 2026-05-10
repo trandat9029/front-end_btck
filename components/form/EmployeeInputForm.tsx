@@ -1,3 +1,8 @@
+/**
+ * Copyright(C) 2026 Luvina
+ * [EmployeeInputForm.tsx], 26/04/2026 tranledat
+ */
+
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -5,46 +10,61 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useADM004 } from '@/hooks/useADM004';
 
-function EmployeeInputForm() {
+/**
+ * Component hiển thị form nhập liệu thông tin nhân viên (ADM004).
+ * Kết nối với hook useADM004 để quản lý trạng thái form và validate.
+ * 
+ * @author tranledat
+ */
+const EmployeeInputForm = () => {
   const {
-    departments,
-    isLoadingDepartments,
-    certifications,
-    isLoadingCertifications,
-    formData,
+    masterData,
+    uiStatus,
+    watchedValues,
     isCertificationSelected,
     isDataReady,
     errors,
     mode,
-    handleFieldChange,
-    handleFieldBlur,
+    handleInputChange,
+    handleInputBlur,
     handleDateChange,
-    handleConfirm,
-    handleBack,
+    handleConfirmClick,
+    handleBackClick,
   } = useADM004();
 
-  // Ref để auto focus vào input đầu tiên
+  const { departments, certifications } = masterData;
+
+  // Ref để thực hiện auto focus vào ô nhập liệu đầu tiên
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  // Effect để thực hiện auto focus khi form đã sẵn sàng và ở chế độ ADD
+  // Effect: Auto focus khi dữ liệu đã sẵn sàng và đang ở chế độ thêm mới (ADD)
   useEffect(() => {
     if (isDataReady && mode === 'add' && firstInputRef.current) {
       firstInputRef.current.focus();
     }
   }, [isDataReady, mode]);
 
-  const getDateValue = (value: string | undefined) => {
-    if (!value) {
-      return null;
-    }
-    // Chuyển dấu / thành - để Date object hiểu được định dạng ISO chuẩn khi khởi tạo
+  /**
+   * Chuyển đổi chuỗi ngày tháng sang đối tượng Date cho DatePicker.
+   */
+  const parseToDate = (value: string | undefined) => {
+    if (!value) return null;
     return new Date(value.replace(/\//g, '-'));
   };
 
   return (
     <form className="c-form box-shadow" onSubmit={(e) => { e.preventDefault(); }}>
       <ul>
+        {/* Hiển thị lỗi hệ thống hoặc lỗi nghiệp vụ từ Server */}
+        {uiStatus.errorMessage && (
+          <li className="p-3 mb-4 bg-red-50 text-red-500 border border-red-200 rounded">
+            {uiStatus.errorMessage}
+          </li>
+        )}
+
         <li className="title">会員情報編集</li>
+
+        {/* Account ID */}
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">
             <i className="relative">
@@ -57,16 +77,14 @@ function EmployeeInputForm() {
               id="employeeLoginId"
               className="form-control"
               ref={firstInputRef}
-              value={formData.employeeLoginId}
-              onChange={(event) =>
-                // Khi gõ sẽ gọi hàm handleFieldChange để vừa update state, vừa báo cho Zod Validate
-                handleFieldChange('employeeLoginId', event.target.value)
-              }
-              onBlur={() => handleFieldBlur('employeeLoginId')}
+              value={watchedValues.employeeLoginId}
+              onChange={(e) => handleInputChange('employeeLoginId', e.target.value)}
+              onBlur={() => handleInputBlur('employeeLoginId')}
               disabled={mode === 'edit'}
             />
-            {/* Nếu Zod bắt được lỗi ở trường này, errors.employeeLoginId sẽ có giá trị và hiển thị message lỗi màu đỏ */}
-            {errors.employeeLoginId && <div className="error-message mt-1">{errors.employeeLoginId.message}</div>}
+            {errors.employeeLoginId && (
+              <div className="error-message mt-1">{errors.employeeLoginId.message}</div>
+            )}
           </div>
         </li>
 
@@ -80,24 +98,21 @@ function EmployeeInputForm() {
           <div className="col-sm col-sm-10">
             <select
               className="form-control"
-              value={formData.departmentId}
-              onChange={(event) =>
-                handleFieldChange('departmentId', event.target.value)
-              }
-              onBlur={() => handleFieldBlur('departmentId')}
-              disabled={isLoadingDepartments}
+              value={watchedValues.departmentId}
+              onChange={(e) => handleInputChange('departmentId', e.target.value)}
+              onBlur={() => handleInputBlur('departmentId')}
+              disabled={uiStatus.isLoading}
             >
               <option value="">選択してください</option>
-              {departments.map((department) => (
-                <option
-                  key={department.departmentId}
-                  value={String(department.departmentId)}
-                >
-                  {department.departmentName}
+              {departments.map((dept) => (
+                <option key={dept.departmentId} value={String(dept.departmentId)}>
+                  {dept.departmentName}
                 </option>
               ))}
             </select>
-            {errors.departmentId && <div className="error-message mt-1">{errors.departmentId.message}</div>}
+            {errors.departmentId && (
+              <div className="error-message mt-1">{errors.departmentId.message}</div>
+            )}
           </div>
         </li>
 
@@ -112,11 +127,13 @@ function EmployeeInputForm() {
             <input
               type="text"
               className="form-control"
-              value={formData.employeeName}
-              onChange={(event) => handleFieldChange('employeeName', event.target.value)}
-              onBlur={() => handleFieldBlur('employeeName')}
+              value={watchedValues.employeeName}
+              onChange={(e) => handleInputChange('employeeName', e.target.value)}
+              onBlur={() => handleInputBlur('employeeName')}
             />
-            {errors.employeeName && <div className="error-message mt-1">{errors.employeeName.message}</div>}
+            {errors.employeeName && (
+              <div className="error-message mt-1">{errors.employeeName.message}</div>
+            )}
           </div>
         </li>
 
@@ -131,13 +148,13 @@ function EmployeeInputForm() {
             <input
               type="text"
               className="form-control"
-              value={formData.employeeNameKana}
-              onChange={(event) =>
-                handleFieldChange('employeeNameKana', event.target.value)
-              }
-              onBlur={() => handleFieldBlur('employeeNameKana')}
+              value={watchedValues.employeeNameKana}
+              onChange={(e) => handleInputChange('employeeNameKana', e.target.value)}
+              onBlur={() => handleInputBlur('employeeNameKana')}
             />
-            {errors.employeeNameKana && <div className="error-message mt-1">{errors.employeeNameKana.message}</div>}
+            {errors.employeeNameKana && (
+              <div className="error-message mt-1">{errors.employeeNameKana.message}</div>
+            )}
           </div>
         </li>
 
@@ -151,16 +168,18 @@ function EmployeeInputForm() {
           <div className="col-sm col-sm-10 d-flex flex-column">
             <div className="datepicker-wrapper">
               <DatePicker
-                selected={getDateValue(formData.employeeBirthDate)}
-                onChange={(date: Date | null) => handleDateChange('employeeBirthDate', date)}
-                onBlur={() => handleFieldBlur('employeeBirthDate')}
+                selected={parseToDate(watchedValues.employeeBirthDate)}
+                onChange={(date) => handleDateChange('employeeBirthDate', date)}
+                onBlur={() => handleInputBlur('employeeBirthDate')}
                 dateFormat="yyyy/MM/dd"
                 className="form-control"
                 placeholderText="YYYY/MM/DD"
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
-            {errors.employeeBirthDate && <div className="error-message mt-1">{errors.employeeBirthDate.message}</div>}
+            {errors.employeeBirthDate && (
+              <div className="error-message mt-1">{errors.employeeBirthDate.message}</div>
+            )}
           </div>
         </li>
 
@@ -175,11 +194,13 @@ function EmployeeInputForm() {
             <input
               type="email"
               className="form-control"
-              value={formData.employeeEmail}
-              onChange={(event) => handleFieldChange('employeeEmail', event.target.value)}
-              onBlur={() => handleFieldBlur('employeeEmail')}
+              value={watchedValues.employeeEmail}
+              onChange={(e) => handleInputChange('employeeEmail', e.target.value)}
+              onBlur={() => handleInputBlur('employeeEmail')}
             />
-            {errors.employeeEmail && <div className="error-message mt-1">{errors.employeeEmail.message}</div>}
+            {errors.employeeEmail && (
+              <div className="error-message mt-1">{errors.employeeEmail.message}</div>
+            )}
           </div>
         </li>
 
@@ -194,59 +215,59 @@ function EmployeeInputForm() {
             <input
               type="text"
               className="form-control"
-              value={formData.employeeTelephone}
-              onChange={(event) =>
-                handleFieldChange('employeeTelephone', event.target.value)
-              }
-              onBlur={() => handleFieldBlur('employeeTelephone')}
+              value={watchedValues.employeeTelephone}
+              onChange={(e) => handleInputChange('employeeTelephone', e.target.value)}
+              onBlur={() => handleInputBlur('employeeTelephone')}
             />
-            {errors.employeeTelephone && <div className="error-message mt-1">{errors.employeeTelephone.message}</div>}
+            {errors.employeeTelephone && (
+              <div className="error-message mt-1">{errors.employeeTelephone.message}</div>
+            )}
           </div>
         </li>
 
-        {/* Mật khẩu */}
+        {/* Mật khẩu (Chỉ hiển thị khi thêm mới) */}
         {mode === 'add' && (
-          <li className="form-group row d-flex">
-            <label className="col-form-label col-sm-2">
-              <i className="relative">
-                パスワード:<span className="note-red">*</span>
-              </i>
-            </label>
-            <div className="col-sm col-sm-10">
-              <input
-                type="password"
-                className="form-control"
-                value={formData.employeeLoginPassword}
-                onChange={(event) =>
-                  handleFieldChange('employeeLoginPassword', event.target.value)
-                }
-                onBlur={() => handleFieldBlur('employeeLoginPassword')}
-              />
-              {errors.employeeLoginPassword && <div className="error-message mt-1">{errors.employeeLoginPassword.message}</div>}
-            </div>
-          </li>
+          <>
+            <li className="form-group row d-flex">
+              <label className="col-form-label col-sm-2">
+                <i className="relative">
+                  パスワード:<span className="note-red">*</span>
+                </i>
+              </label>
+              <div className="col-sm col-sm-10">
+                <input
+                  type="password"
+                  className="form-control"
+                  value={watchedValues.employeeLoginPassword}
+                  onChange={(e) => handleInputChange('employeeLoginPassword', e.target.value)}
+                  onBlur={() => handleInputBlur('employeeLoginPassword')}
+                />
+                {errors.employeeLoginPassword && (
+                  <div className="error-message mt-1">{errors.employeeLoginPassword.message}</div>
+                )}
+              </div>
+            </li>
+
+            <li className="form-group row d-flex">
+              <label className="col-form-label col-sm-2">
+                <i className="relative">パスワード（確認）:</i>
+              </label>
+              <div className="col-sm col-sm-10">
+                <input
+                  type="password"
+                  className="form-control"
+                  value={watchedValues.employeeLoginPasswordConfirm}
+                  onChange={(e) => handleInputChange('employeeLoginPasswordConfirm', e.target.value)}
+                  onBlur={() => handleInputBlur('employeeLoginPasswordConfirm')}
+                />
+                {errors.employeeLoginPasswordConfirm && (
+                  <div className="error-message mt-1">{errors.employeeLoginPasswordConfirm.message}</div>
+                )}
+              </div>
+            </li>
+          </>
         )}
 
-        {/* Xác nhận mật khẩu */}
-        {mode === 'add' && (
-          <li className="form-group row d-flex">
-            <label className="col-form-label col-sm-2">
-              <i className="relative">パスワード（確認）:</i>
-            </label>
-            <div className="col-sm col-sm-10">
-              <input
-                type="password"
-                className="form-control"
-                value={formData.employeeLoginPasswordConfirm}
-                onChange={(event) =>
-                  handleFieldChange('employeeLoginPasswordConfirm', event.target.value)
-                }
-                onBlur={() => handleFieldBlur('employeeLoginPasswordConfirm')}
-              />
-              {errors.employeeLoginPasswordConfirm && <div className="error-message mt-1">{errors.employeeLoginPasswordConfirm.message}</div>}
-            </div>
-          </li>
-        )}
         <li className="title mt-12">
           <a href="#!">日本語能力</a>
         </li>
@@ -259,24 +280,21 @@ function EmployeeInputForm() {
           <div className="col-sm col-sm-10">
             <select
               className="form-control"
-              value={formData.certificationId}
-              onChange={(event) =>
-                handleFieldChange('certificationId', event.target.value)
-              }
-              onBlur={() => handleFieldBlur('certificationId')}
-              disabled={isLoadingCertifications}
+              value={watchedValues.certificationId}
+              onChange={(e) => handleInputChange('certificationId', e.target.value)}
+              onBlur={() => handleInputBlur('certificationId')}
+              disabled={uiStatus.isLoading}
             >
               <option value="">選択してください</option>
-              {certifications.map((certification) => (
-                <option
-                  key={certification.certificationId}
-                  value={String(certification.certificationId)}
-                >
-                  {certification.certificationName}
+              {certifications.map((cert) => (
+                <option key={cert.certificationId} value={String(cert.certificationId)}>
+                  {cert.certificationName}
                 </option>
               ))}
             </select>
-            {errors.certificationId && <div className="error-message mt-1">{errors.certificationId.message}</div>}
+            {errors.certificationId && (
+              <div className="error-message mt-1">{errors.certificationId.message}</div>
+            )}
           </div>
         </li>
 
@@ -290,9 +308,9 @@ function EmployeeInputForm() {
           <div className="col-sm col-sm-10 d-flex flex-column">
             <div className="datepicker-wrapper">
               <DatePicker
-                selected={getDateValue(formData.certificationStartDate)}
-                onChange={(date: Date | null) => handleDateChange('certificationStartDate', date)}
-                onBlur={() => handleFieldBlur('certificationStartDate')}
+                selected={parseToDate(watchedValues.certificationStartDate)}
+                onChange={(date) => handleDateChange('certificationStartDate', date)}
+                onBlur={() => handleInputBlur('certificationStartDate')}
                 dateFormat="yyyy/MM/dd"
                 className="form-control"
                 placeholderText="YYYY/MM/DD"
@@ -300,7 +318,9 @@ function EmployeeInputForm() {
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
-            {errors.certificationStartDate && <div className="error-message mt-1">{errors.certificationStartDate.message}</div>}
+            {errors.certificationStartDate && (
+              <div className="error-message mt-1">{errors.certificationStartDate.message}</div>
+            )}
           </div>
         </li>
 
@@ -314,9 +334,9 @@ function EmployeeInputForm() {
           <div className="col-sm col-sm-10 d-flex flex-column">
             <div className="datepicker-wrapper">
               <DatePicker
-                selected={getDateValue(formData.certificationEndDate)}
-                onChange={(date: Date | null) => handleDateChange('certificationEndDate', date)}
-                onBlur={() => handleFieldBlur('certificationEndDate')}
+                selected={parseToDate(watchedValues.certificationEndDate)}
+                onChange={(date) => handleDateChange('certificationEndDate', date)}
+                onBlur={() => handleInputBlur('certificationEndDate')}
                 dateFormat="yyyy/MM/dd"
                 className="form-control"
                 placeholderText="YYYY/MM/DD"
@@ -324,7 +344,9 @@ function EmployeeInputForm() {
               />
               <span className="glyphicon-calendar" aria-hidden="true" />
             </div>
-            {errors.certificationEndDate && <div className="error-message mt-1">{errors.certificationEndDate.message}</div>}
+            {errors.certificationEndDate && (
+              <div className="error-message mt-1">{errors.certificationEndDate.message}</div>
+            )}
           </div>
         </li>
 
@@ -337,23 +359,33 @@ function EmployeeInputForm() {
             <input
               type="text"
               className="form-control"
-              value={formData.employeeCertificationScore}
-              onChange={(event) => handleFieldChange('employeeCertificationScore', event.target.value)}
-              onBlur={() => handleFieldBlur('employeeCertificationScore')}
+              value={watchedValues.employeeCertificationScore}
+              onChange={(e) => handleInputChange('employeeCertificationScore', e.target.value)}
+              onBlur={() => handleInputBlur('employeeCertificationScore')}
               disabled={!isCertificationSelected}
               maxLength={3}
             />
-            {errors.employeeCertificationScore && <div className="error-message mt-1">{errors.employeeCertificationScore.message}</div>}
+            {errors.employeeCertificationScore && (
+              <div className="error-message mt-1">{errors.employeeCertificationScore.message}</div>
+            )}
           </div>
         </li>
 
-        {/* Nút bấm điều hướng */}
+        {/* Nút bấm */}
         <li className="form-group row d-flex">
           <div className="btn-group col-sm col-sm-10 ml">
-            <button type="button" onClick={handleConfirm} className="btn btn-primary btn-sm">
+            <button
+              type="button"
+              onClick={handleConfirmClick}
+              className="btn btn-primary btn-sm"
+            >
               確認
             </button>
-            <button type="button" onClick={handleBack} className="btn btn-secondary btn-sm">
+            <button
+              type="button"
+              onClick={handleBackClick}
+              className="btn btn-secondary btn-sm"
+            >
               戻る
             </button>
           </div>
@@ -361,6 +393,6 @@ function EmployeeInputForm() {
       </ul>
     </form>
   );
-}
+};
 
 export default EmployeeInputForm;

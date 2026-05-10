@@ -4,12 +4,19 @@
  */
 
 import { apiClient } from './client';
-import { EmployeeDetailResponse, EmployeeFormData, EmployeeListApiResponse, EmployeeUpdateApiResponse, GetEmployeesParams } from '@/types/employee';
+import {
+  EmployeeDetailResponse,
+  EmployeeFormData,
+  EmployeeListApiResponse,
+  EmployeeUpdateApiResponse,
+  GetEmployeesParams
+} from '@/types/employee';
 
 /**
- * Hàm hỗ trợ chuyển đổi EmployeeFormData (phẳng) sang cấu trúc Backend mong đợi (lồng nhau).
+ * transformEmployeeRequest: Chuyển đổi EmployeeFormData (phẳng) sang cấu trúc Backend mong đợi (lồng nhau).
+ * 
  * @param formData Dữ liệu form phẳng từ frontend
- * @return Đối tượng dữ liệu đã được cấu trúc lại
+ * @return Đối tượng dữ liệu đã được cấu trúc lại cho API
  */
 const transformEmployeeRequest = (formData: EmployeeFormData) => {
   const {
@@ -35,13 +42,15 @@ const transformEmployeeRequest = (formData: EmployeeFormData) => {
 };
 
 /**
- * Các phương thức gọi API liên quan đến nhân viên.
+ * employeeApi: Các dịch vụ gọi API liên quan đến Nhân viên.
+ * 
  * @author tranledat
  */
 export const employeeApi = {
   /**
-   * Gọi API lấy danh sách nhân viên cho ADM002.
-   * Tự loại bỏ các query param rỗng trước khi gửi request.
+   * getEmployees: Lấy danh sách nhân viên cho màn hình ADM002.
+   * Tự động loại bỏ các query param rỗng trước khi gửi request.
+   * 
    * @param params Các tham số tìm kiếm, phân trang và sắp xếp
    * @return Danh sách nhân viên và thông tin phân trang
    */
@@ -64,16 +73,17 @@ export const employeeApi = {
   },
 
   /**
-   * Gọi API validate dữ liệu nhân viên cho ADM004.
+   * validateEmployee: Gọi API validate dữ liệu nhân viên cho màn hình ADM004.
+   * 
    * @param formData Dữ liệu form nhân viên cần validate
-   * @param mode Bước validate (SUBMIT hoặc CONFIRM)
+   * @param action Bước validate (add hoặc edit)
    * @return Kết quả validate (200 OK hoặc mã lỗi kèm danh sách field lỗi)
    */
   validateEmployee: async (
     formData: EmployeeFormData,
-    mode?: string
+    action?: string
   ): Promise<EmployeeListApiResponse> => {
-    const config = mode ? { params: { MODE: mode } } : undefined;
+    const config = action ? { params: { action } } : undefined;
     const requestData = transformEmployeeRequest(formData);
 
     const response = await apiClient.post<EmployeeListApiResponse>(
@@ -85,7 +95,8 @@ export const employeeApi = {
   },
 
   /**
-   * Gọi API thực hiện lưu (Thêm mới) nhân viên cho ADM005.
+   * addEmployee: Gọi API thực hiện lưu (Thêm mới) nhân viên.
+   * 
    * @param formData Dữ liệu nhân viên đã qua validate
    * @return Kết quả thực hiện lưu
    */
@@ -101,7 +112,8 @@ export const employeeApi = {
   },
 
   /**
-   * Gọi API thực hiện cập nhật nhân viên cho ADM005.
+   * updateEmployee: Gọi API thực hiện cập nhật nhân viên.
+   * 
    * @param formData Dữ liệu nhân viên cần cập nhật
    * @return Kết quả thực hiện cập nhật
    */
@@ -117,9 +129,10 @@ export const employeeApi = {
   },
 
   /**
-   * Gọi API lấy thông tin chi tiết nhân viên theo ID.
+   * getEmployeeById: Lấy thông tin chi tiết nhân viên theo ID.
+   * 
    * @param id ID của nhân viên cần lấy thông tin
-   * @return EmployeeDetailResponse Thông tin chi tiết của nhân viên bao gồm cả danh sách chứng chỉ
+   * @return Thông tin chi tiết của nhân viên
    */
   getEmployeeById: async (id: number): Promise<EmployeeDetailResponse> => {
     const response = await apiClient.get<EmployeeDetailResponse>(`/employee/${id}`);
@@ -127,9 +140,10 @@ export const employeeApi = {
   },
 
   /**
-   * Gọi API thực hiện xóa một nhân viên dựa trên ID.
+   * deleteEmployee: Thực hiện xóa một nhân viên dựa trên ID.
+   * 
    * @param id ID của nhân viên muốn xóa khỏi hệ thống
-   * @return EmployeeListApiResponse Kết quả thực hiện xóa (thành công hoặc mã lỗi)
+   * @return Kết quả thực hiện xóa
    */
   deleteEmployee: async (id: number): Promise<EmployeeListApiResponse> => {
     const response = await apiClient.delete<EmployeeListApiResponse>(`/employee/${id}`);

@@ -1,3 +1,8 @@
+/**
+ * Copyright(C) 2024 Luvina
+ * api.ts, 24/04/2024 tranledat
+ */
+
 // Cấu trúc lỗi chung từ API
 export interface ApiError {
   message: string;
@@ -18,4 +23,3 @@ export interface PaginationMeta {
   limit: number;
   totalPages: number;
 }
-

@@ -1,3 +1,8 @@
+/**
+ * Copyright(C) 2024 Luvina
+ * department.ts, 24/04/2024 tranledat
+ */
+
 // Biểu diễn dữ liệu phòng ban
 export interface Department {
   departmentId: number;

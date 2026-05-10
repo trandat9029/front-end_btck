@@ -1,8 +1,18 @@
+/**
+ * Copyright(C) 2024 Luvina
+ * department.ts, 10/05/2026 tranledat
+ */
+
 import { apiClient } from './client';
-import type { Department, DepartmentApiItem, DepartmentListResponse, NormalizedDepartmentListResponse } from '@/types/department';
+import type {
+  Department,
+  DepartmentApiItem,
+  DepartmentListResponse,
+  NormalizedDepartmentListResponse
+} from '@/types/department';
 
 /**
- * Chuẩn hóa response phòng ban từ backend về cấu trúc front-end đang dùng.
+ * normalizeDepartments: Chuẩn hóa dữ liệu phòng ban từ API về cấu trúc thống nhất cho Frontend.
  */
 function normalizeDepartments(payload: DepartmentListResponse): Department[] {
   if (Array.isArray(payload.departments)) {
@@ -22,9 +32,12 @@ function normalizeDepartments(payload: DepartmentListResponse): Department[] {
   return [];
 }
 
+/**
+ * departmentApi: Các dịch vụ gọi API liên quan đến Phòng ban (Group).
+ */
 export const departmentApi = {
   /**
-   * Gọi API lấy toàn bộ phòng ban phục vụ bộ lọc nhóm của ADM002.
+   * getDepartments: Lấy danh sách toàn bộ phòng ban.
    */
   getDepartments: async (): Promise<NormalizedDepartmentListResponse> => {
     const response = await apiClient.get<DepartmentListResponse>('/departments');

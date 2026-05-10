@@ -2,59 +2,80 @@
  * Copyright(C) 2026 Luvina
  * [page.tsx] (SystemError), 28/04/2026 tranledat
  */
+
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes';
 import { STORAGE_KEYS } from '@/constants/system';
 import * as Messages from '@/constants/messages';
 
 /**
- * Màn hình hiển thị lỗi hệ thống (System Error).
- * Hiển thị thông báo lỗi và nút quay lại danh sách.
- * @author tranledat
+ * SystemErrorPage: Hiển thị thông báo lỗi nghiêm trọng và cho phép quay lại danh sách.
  */
-export default function SystemErrorPage() {
+const SystemErrorPage = () => {
   const router = useRouter();
-  const [errorMessage, setErrorMessage] = useState('');
-  const [errorCode, setErrorCode] = useState('');
+  const [errorInfo, setErrorInfo] = useState({
+    message: '',
+    code: ''
+  });
 
   useEffect(() => {
-    // Đọc thông báo lỗi từ sessionStorage (được set bởi interceptor hoặc hook)
-    const msg = sessionStorage.getItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE);
-    const code = sessionStorage.getItem(STORAGE_KEYS.SYSTEM_ERROR_CODE);
+    // Đọc thông báo lỗi từ sessionStorage (được thiết lập bởi Interceptor hoặc các Hooks)
+    const storedMsg = sessionStorage.getItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE);
+    const storedCode = sessionStorage.getItem(STORAGE_KEYS.SYSTEM_ERROR_CODE);
 
-    if (msg) {
-      setErrorMessage(msg);
-      setErrorCode(code || '');
-      // Xóa sau khi đã lấy để tránh hiển thị lại khi reload trang không mong muốn
+    if (storedMsg) {
+      setErrorInfo({
+        message: storedMsg,
+        code: storedCode || ''
+      });
+      // Xóa dữ liệu sau khi lấy để tránh hiển thị lại khi người dùng reload trang
       sessionStorage.removeItem(STORAGE_KEYS.SYSTEM_ERROR_MESSAGE);
       sessionStorage.removeItem(STORAGE_KEYS.SYSTEM_ERROR_CODE);
     } else {
-      // Fallback nếu không có msg trong storage (ví dụ từ URL cũ hoặc truy cập trực tiếp)
+      // Fallback: Lấy thông tin từ URL nếu truy cập trực tiếp
       const searchParams = new URLSearchParams(window.location.search);
-      setErrorMessage(searchParams.get('msg') || Messages.MSG_ERROR_SYSTEM);
-      setErrorCode(searchParams.get('code') || '');
+      setErrorInfo({
+        message: searchParams.get('msg') || Messages.MSG_ERROR_SYSTEM,
+        code: searchParams.get('code') || ''
+      });
     }
   }, []);
+
+  /**
+   * Quay lại màn hình danh sách ADM002.
+   */
+  const handleOkClick = () => {
+    router.push(ROUTES.ADM002);
+  };
 
   return (
     <div className="notification-box">
       <h1 className="note-err" style={{ fontWeight: 'bold', marginBottom: '20px' }}>
-        {errorCode ? `${errorCode}: ` : ''}
-        {errorMessage}
+        {errorInfo.code ? `${errorInfo.code}: ` : ''}
+        {errorInfo.message}
       </h1>
       <div className="notification-box-btn">
         <button
           type="button"
-          onClick={() => router.push(ROUTES.ADM002)}
+          onClick={handleOkClick}
           className="btn-default"
-          style={{ backgroundColor: '#5cb85c', color: 'white', border: 'none', padding: '10px 30px', borderRadius: '4px', cursor: 'pointer' }}
+          style={{
+            backgroundColor: '#5cb85c',
+            color: 'white',
+            border: 'none',
+            padding: '10px 30px',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
         >
           OK
         </button>
       </div>
     </div>
   );
-}
+};
+
+export default SystemErrorPage;

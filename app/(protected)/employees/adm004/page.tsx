@@ -5,19 +5,24 @@
 
 'use client';
 
+import React, { Suspense } from 'react';
 import EmployeeInputForm from '@/components/form/EmployeeInputForm';
 import { useAuth } from '@/hooks/useAuth';
 
 /**
- * Trang Đăng ký / Chỉnh sửa nhân viên (ADM004).
- * @author tranledat
+ * ADM004Page: Màn hình nhập liệu thông tin nhân viên.
  */
-export default function EmployeeEditPage() {
+const ADM004Page = () => {
+  // Kiểm tra quyền truy cập
   useAuth();
 
   return (
     <div className="row">
-      <EmployeeInputForm />
+      <Suspense fallback={<div className="p-3">読み込み中...</div>}>
+        <EmployeeInputForm />
+      </Suspense>
     </div>
   );
-}
+};
+
+export default ADM004Page;
