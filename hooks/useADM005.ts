@@ -31,14 +31,22 @@ import { EDIT } from '@/constants/employee';
  * @author tranledat
  */
 export const useADM005 = () => {
+  /** Hook điều hướng trang */
   const router = useRouter();
 
   // --- 1. States & Configurations (Trạng thái và Cấu hình) ---
 
-  // Lấy dữ liệu tạm thời từ SessionStorage
+  /**
+   * Dữ liệu form nhân viên đã được lưu tạm vào SessionStorage từ màn hình ADM004.
+   * null nếu người dùng truy cập trực tiếp URL (không qua luồng nhập liệu).
+   */
   const storedData = useMemo(() => loadEmployeeFormDataStorage(), []);
 
-  // Master Data phục vụ việc ánh xạ ID -> Tên hiển thị
+  /**
+   * Dữ liệu danh mục (Master Data) phục vụ việc ánh xạ ID -> Tên hiển thị:
+   * - departments: Danh sách phòng ban
+   * - certifications: Danh sách chứng chỉ Nhật ngữ
+   */
   const [masterData, setMasterData] = useState<{
     departments: Department[];
     certifications: Certification[];
@@ -47,7 +55,10 @@ export const useADM005 = () => {
     certifications: []
   });
 
-  // Trạng thái giao diện
+  /**
+   * Trạng thái giao diện:
+   * - isSubmitting: true khi đang gọi API lưu dữ liệu (tránh double-click)
+   */
   const [uiState, setUiState] = useState({
     isSubmitting: false, // Trạng thái đang gọi API lưu dữ liệu
   });
@@ -110,8 +121,7 @@ export const useADM005 = () => {
         : await employeeApi.addEmployee(formData);
 
       if (String(response.code) === String(HTTP_STATUS.OK)) {
-        // Thành công: Xóa Storage và chuyển sang màn hình hoàn tất ADM006
-        clearEmployeeFormDataStorage();
+        // Thành công: Chuyển sang màn hình hoàn tất ADM006
         const successMsg = formatBackendMessage(response.message);
         router.push(`${ROUTES.ADM006}?msg=${encodeURIComponent(successMsg)}`);
       } else {
@@ -126,6 +136,8 @@ export const useADM005 = () => {
     } catch (error) {
       handleProcessSystemError(error);
     } finally {
+      // Luôn xóa dữ liệu tạm trong Storage sau khi submit (thành công hoặc thất bại)
+      clearEmployeeFormDataStorage();
       setUiState({ isSubmitting: false });
     }
   }, [router, storedData, uiState.isSubmitting]);
@@ -161,7 +173,7 @@ export const useADM005 = () => {
   /**
    * handleProcessSystemError: Xử lý lỗi hệ thống tập trung.
    */
-  const handleProcessSystemError = (error: any) => {
+  const handleProcessSystemError = (error: unknown) => {
     console.error('ADM005 System Error:', error);
     let errorMsg = Messages.MSG_ERROR_SYSTEM;
     let errorCode = '';

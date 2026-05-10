@@ -150,9 +150,8 @@ const EmployeeTable = ({
                   )}
                   <button
                     type="button"
-                    className={`btn btn-sm btn-falcon-default ${
-                      page === currentPage ? 'text-dark' : 'text-primary'
-                    }`}
+                    className={`btn btn-sm btn-falcon-default ${page === currentPage ? 'text-dark' : 'text-primary'
+                      }`}
                     onClick={() => void onPageChange(page)}
                     disabled={page === currentPage || isLoading}
                   >

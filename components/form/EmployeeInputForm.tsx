@@ -9,6 +9,8 @@ import React, { useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useADM004 } from '@/hooks/useADM004';
+import { ADD, EDIT } from '@/constants/employee';
+
 
 /**
  * Component hiển thị form nhập liệu thông tin nhân viên (ADM004).
@@ -39,7 +41,7 @@ const EmployeeInputForm = () => {
 
   // Effect: Auto focus khi dữ liệu đã sẵn sàng và đang ở chế độ thêm mới (ADD)
   useEffect(() => {
-    if (isDataReady && mode === 'add' && firstInputRef.current) {
+    if (isDataReady && mode === ADD && firstInputRef.current) {
       firstInputRef.current.focus();
     }
   }, [isDataReady, mode]);
@@ -53,7 +55,7 @@ const EmployeeInputForm = () => {
   };
 
   return (
-    <form className="c-form box-shadow" onSubmit={(e) => { e.preventDefault(); }}>
+    <form className="c-form box-shadow" onSubmit={handleConfirmClick}>
       <ul>
         {/* Hiển thị lỗi hệ thống hoặc lỗi nghiệp vụ từ Server */}
         {uiStatus.errorMessage && (
@@ -68,7 +70,7 @@ const EmployeeInputForm = () => {
         <li className="form-group row d-flex">
           <label className="col-form-label col-sm-2">
             <i className="relative">
-              アカウント名:{mode === 'add' && <span className="note-red">*</span>}
+              アカウント名:{mode === ADD && <span className="note-red">*</span>}
             </i>
           </label>
           <div className="col-sm col-sm-10">
@@ -80,7 +82,7 @@ const EmployeeInputForm = () => {
               value={watchedValues.employeeLoginId}
               onChange={(e) => handleInputChange('employeeLoginId', e.target.value)}
               onBlur={() => handleInputBlur('employeeLoginId')}
-              disabled={mode === 'edit'}
+              disabled={mode === EDIT}
             />
             {errors.employeeLoginId && (
               <div className="error-message mt-1">{errors.employeeLoginId.message}</div>
@@ -226,7 +228,7 @@ const EmployeeInputForm = () => {
         </li>
 
         {/* Mật khẩu (Chỉ hiển thị khi thêm mới) */}
-        {mode === 'add' && (
+        {mode === ADD && (
           <>
             <li className="form-group row d-flex">
               <label className="col-form-label col-sm-2">
@@ -375,8 +377,7 @@ const EmployeeInputForm = () => {
         <li className="form-group row d-flex">
           <div className="btn-group col-sm col-sm-10 ml">
             <button
-              type="button"
-              onClick={handleConfirmClick}
+              type="submit"
               className="btn btn-primary btn-sm"
             >
               確認

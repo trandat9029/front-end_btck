@@ -37,20 +37,36 @@ import { EmployeeFormData, EmployeeFormMode, MessageResponse } from '@/types/emp
 /**
  * Hook quản lý toàn bộ luồng nghiệp vụ của màn hình nhập liệu thông tin nhân viên (ADM004).
  * Xử lý: Nạp Master Data, nạp dữ liệu chỉnh sửa, validate Form và điều hướng sang trang xác nhận.
- * 
+ *
  * @author tranledat
+ * @return Các state, form methods và handler cần thiết để render màn hình ADM004
  */
 export const useADM004 = () => {
+  /** Hook điều hướng trang */
   const router = useRouter();
+
+  /** Hook đọc query string từ URL hiện tại */
   const searchParams = useSearchParams();
 
   // --- 1. States & Configurations (Trạng thái và Cấu hình) ---
 
+  /** ID nhân viên dạng chuỗi từ URL (undefined nếu ở chế độ thêm mới) */
   const employeeIdStr = searchParams.get('id');
+
+  /** Cờ xác định người dùng đang quay lại từ trang xác nhận ADM005 */
   const isBack = searchParams.get('mode') === 'back';
+
+  /** ID nhân viên (số nguyên) hoặc undefined nếu đang ở chế độ thêm mới */
   const id = (employeeIdStr && /^\d+$/.test(employeeIdStr)) ? Number(employeeIdStr) : undefined;
+
+  /** Chế độ hoạt động: ADD (thêm mới) hoặc EDIT (chỉnh sửa) */
   const mode: EmployeeFormMode = id ? EDIT : ADD;
 
+  /**
+   * Dữ liệu danh mục (Master Data) dùng để render các dropdown:
+   * - departments: Danh sách phòng ban
+   * - certifications: Danh sách chứng chỉ Nhật ngữ
+   */
   const [masterData, setMasterData] = useState<{
     departments: Department[];
     certifications: Certification[];
@@ -59,7 +75,12 @@ export const useADM004 = () => {
     certifications: []
   });
 
-  // Quản lý trạng thái giao diện (Loading, Thông báo lỗi)
+  /**
+   * Trạng thái giao diện:
+   * - isLoading: true khi đang gọi API (hiển thị spinner)
+   * - isDataReady: true khi dữ liệu đã nạp xong và Form sẵn sàng hiển thị
+   * - errorMessage: Thông báo lỗi chung của cả màn hình (không gắn vào trường cụ thể)
+   */
   const [uiStatus, setUiStatus] = useState({
     isLoading: true,    // Đang gọi API
     isDataReady: false, // Dữ liệu đã nạp xong và sẵn sàng hiển thị Form
@@ -84,13 +105,23 @@ export const useADM004 = () => {
     mode: 'onBlur',
   });
 
-  // Theo dõi giá trị Form để UI render reactive
+  /**
+   * Theo dõi (subscribe) toàn bộ giá trị Form theo thời gian thực.
+   * Dùng để UI tự động re-render khi người dùng thay đổi bất kỳ trường nào.
+   */
   const watchedValues = watch();
 
-  // Kiểm tra trạng thái chọn chứng chỉ Nhật ngữ
+  /**
+   * Cờ xác định người dùng đã chọn chứng chỉ Nhật ngữ hay chưa.
+   * true = đã chọn -> hiển thị các trường ngày tháng và điểm số.
+   * false = chưa chọn -> ẩn các trường đó.
+   */
   const isCertificationSelected = !!watchedValues.certificationId;
 
-  // Query string của ADM002 để quay lại đúng bộ lọc/phân trang cũ
+  /**
+   * Chuỗi query string (không bao gồm 'id' và 'mode') để quay lại
+   * màn hình ADM002 với đúng bộ lọc và phân trang đã áp dụng trước đó.
+   */
   const returnQueryString = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete('id');
@@ -98,7 +129,10 @@ export const useADM004 = () => {
     return params.toString();
   }, [searchParams]);
 
-  // Danh sách các trường liên quan đến chứng chỉ để validate đồng thời
+  /**
+   * Danh sách tên các trường liên quan đến thông tin chứng chỉ.
+   * Dùng để validate đồng thời tất cả các trường này khi một trong số chúng thay đổi.
+   */
   const CERT_FIELDS = useMemo(() => [
     'certificationId', 'certificationStartDate', 'certificationEndDate', 'employeeCertificationScore'
   ] as const, []);
@@ -170,23 +204,32 @@ export const useADM004 = () => {
   /**
    * handleInputChange: Cập nhật giá trị trường và thực hiện validate.
    */
-  const handleInputChange = useCallback((field: keyof EmployeeFormData, value: any) => {
+  const handleInputChange = useCallback((field: keyof EmployeeFormData, value: EmployeeFormData[keyof EmployeeFormData]) => {
     if (field === 'certificationId' && value === '') {
       // Nếu bỏ chọn chứng chỉ -> Reset toàn bộ thông tin liên quan
       setValue('certificationId', '');
       setValue('certificationStartDate', '');
       setValue('certificationEndDate', '');
       setValue('employeeCertificationScore', '');
-      CERT_FIELDS.forEach(f => clearErrors(f as any));
+      CERT_FIELDS.forEach(f => clearErrors(f));
+    } else if (field === 'certificationId' && value !== '') {
+      // Nếu chọn chứng chỉ KHÁC -> Set ID mới và xóa dữ liệu cũ của chứng chỉ
+      setValue('certificationId', value as string);
+      setValue('certificationStartDate', '');
+      setValue('certificationEndDate', '');
+      setValue('employeeCertificationScore', '');
+      clearErrors('certificationStartDate');
+      clearErrors('certificationEndDate');
+      clearErrors('employeeCertificationScore');
     } else {
-      setValue(field, value);
+      setValue(field, value as string);
     }
 
     // Thực hiện validate
-    if (CERT_FIELDS.includes(field as any)) {
-      void trigger(CERT_FIELDS as any);
+    if (CERT_FIELDS.includes(field as (typeof CERT_FIELDS)[number])) {
+      void trigger([...CERT_FIELDS]);
     } else {
-      void trigger(field as any);
+      void trigger(field);
     }
   }, [setValue, trigger, clearErrors, CERT_FIELDS]);
 
@@ -194,10 +237,10 @@ export const useADM004 = () => {
    * handleInputBlur: Validate trường khi rời khỏi ô nhập liệu.
    */
   const handleInputBlur = useCallback((field: keyof EmployeeFormData) => {
-    if (CERT_FIELDS.includes(field as any)) {
-      void trigger(CERT_FIELDS as any);
+    if (CERT_FIELDS.includes(field as (typeof CERT_FIELDS)[number])) {
+      void trigger([...CERT_FIELDS]);
     } else {
-      void trigger(field as any);
+      void trigger(field);
     }
   }, [trigger, CERT_FIELDS]);
 
@@ -299,7 +342,7 @@ export const useADM004 = () => {
   /**
    * handleProcessSystemError: Xử lý lỗi hệ thống và điều hướng trang.
    */
-  const handleProcessSystemError = (error: any) => {
+  const handleProcessSystemError = (error: unknown) => {
     console.error('System Error:', error);
     let errorMsg = Messages.MSG_ERROR_SYSTEM;
     let errorCode = '';

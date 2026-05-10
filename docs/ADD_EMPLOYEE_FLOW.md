@@ -1,4 +1,4 @@
-# 🚀 Quy trình End-to-End: Thêm mới Nhân viên (Full Add Flow)
+# 🚀 Quy trình End-to-End: Thêm mới Nhân viên (ADM004 Add Flow)
 
 Tài liệu này mô tả chi tiết luồng dữ liệu xuyên suốt từ giao diện người dùng (FE), qua các bước xác nhận, đến logic xử lý lưu trữ tại máy chủ (BE).
 
@@ -6,52 +6,76 @@ Tài liệu này mô tả chi tiết luồng dữ liệu xuyên suốt từ giao
 
 ## GIAI ĐOẠN 1: NHẬP LIỆU (ADM004)
 
-1.  **Khởi tạo (Initialization)**:
-    *   Hook `useADM004` nạp dữ liệu trống và sẵn sàng hiển thị.
-2.  **Tương tác & Validate tại chỗ (Local Validation)**:
-    *   Người dùng nhập liệu. Zod Schema thực hiện validate định dạng.
-3.  **Xác nhận bước 1 (Confirm Input)**:
-    *   *FE Dòng 381*: `handleConfirm` được kích hoạt.
-    *   *FE Dòng 387*: Gọi API `validateEmployee` (Backend) với `mode=CONFIRM`. 
+### Hook: `useADM004.ts` – Chế độ ADD
+
+| Bước | Phương thức | Mô tả |
+|---|---|---|
+| Khởi tạo | `initialize` (trong `useEffect`) | Nạp Master Data (phòng ban + chứng chỉ), reset form về trạng thái trống |
+| Quay lại từ ADM005 | `isBack = true` | Nạp lại dữ liệu từ `sessionStorage` thay vì reset |
+| Nhập liệu | `handleInputChange` | Cập nhật giá trị trường, kích hoạt validate Zod theo thời gian thực |
+| Đổi chứng chỉ | `handleInputChange` (`field='certificationId'`, `value !== ''`) | Reset toàn bộ trường ngày và điểm khi đổi sang chứng chỉ khác |
+| Bỏ chọn chứng chỉ | `handleInputChange` (`value === ''`) | Reset toàn bộ trường chứng chỉ và xóa lỗi liên quan |
+| Nhấn Xác nhận | `handleConfirmClick` | Submit form: validate Zod cục bộ → gọi API `validateEmployee` (BE) |
 
 ---
 
-## GIAI ĐOẠN 2: CHI TIẾT QUY TRÌNH VALIDATE (BACKEND)
+## GIAI ĐOẠN 2: VALIDATE TẠI BACKEND (BE)
 
-Khi Backend nhận yêu cầu, lớp `EmployeeValidate.java` thực hiện kiểm tra:
+### API: `POST /employee/validate?action=add`
+### Controller: `EmployeeController.java` – `validateEmployee` (dòng 97)
 
-1.  **Điều phối chung**: *BE Dòng 109* (`validateForConfirm`) gọi hàm validate tổng quát.
-2.  **Kiểm tra Login ID**:
-    *   *BE Dòng 178*: Hàm `validateLoginId` kiểm tra định dạng và độ dài.
-    *   *BE Dòng 190*: Truy vấn Database kiểm tra tính duy nhất (`ER003`).
-3.  **Kiểm tra Phòng ban**:
-    *   *BE Dòng 205*: Hàm `validateDepartment` kiểm tra ID có tồn tại trong hệ thống không (`ER004`).
-4.  **Kiểm tra Chứng chỉ**:
-    *   *BE Dòng 330*: Hàm `validateCertification` kiểm tra logic ngày tháng.
-    *   *BE Dòng 361*: So sánh ngày bắt đầu/kết thúc (`ER012`).
+Lớp `EmployeeValidate.java` thực hiện theo cơ chế **Checklist Fail-fast** (dừng ngay tại lỗi đầu tiên):
+
+| Thứ tự | Hàm validate | Kiểm tra |
+|---|---|---|
+| 1 | `validateForSubmit` (dòng 100) | Chỉ kiểm tra `employeeLoginId` (mode ADD) |
+| 2 | `validateLoginId` (dòng 175) | Bắt buộc, ≤50 ký tự, đúng định dạng, không trùng lặp (`ER001`, `ER006`, `ER019`, `ER003`) |
+
+Nếu hợp lệ → Trả về HTTP 200. FE lưu dữ liệu vào `sessionStorage` và chuyển sang ADM005.
 
 ---
 
-## GIAI ĐOẠN 3: XÁC NHẬN & LƯU TRỮ (ADM005 -> BE)
+## GIAI ĐOẠN 3: XÁC NHẬN & LƯU TRỮ (ADM005 → BE)
 
-1.  **Xác nhận tại ADM005**:
-    *   *FE Dòng 121*: Hàm `handleSubmit` được gọi khi nhấn "Đăng ký".
-    *   *FE Dòng 132*: Gọi API `addEmployee` (POST).
-2.  **Xử lý tại Controller**:
-    *   *BE Dòng 96*: `EmployeeController` tiếp nhận request.
-    *   *BE Dòng 112*: Gọi Service để thực hiện lưu trữ.
-3.  **Xử lý tại Service (`EmployeeServiceImpl.java`)**:
-    *   *BE Dòng 125*: `@Transactional` đảm bảo an toàn dữ liệu.
-    *   *BE Dòng 138*: Mã hóa mật khẩu bằng `BCrypt`.
-    *   *BE Dòng 141*: Lưu nhân viên vào bảng `employees`.
-    *   *BE Dòng 152*: Lưu chứng chỉ vào bảng `employees_certifications`.
+### Hook: `useADM005.ts` – `handleSubmitClick`
+
+1. Đọc dữ liệu từ `sessionStorage` (đã lưu ở giai đoạn 2).
+2. Ánh xạ `departmentId` → `departmentName`, `certificationId` → `certificationName` để hiển thị.
+3. Khi nhấn **OK**: Gọi `employeeApi.addEmployee` → `POST /employee`.
+
+### API: `POST /employee`
+### Controller: `EmployeeController.java` – `addEmployee` (dòng 125)
+
+Luôn validate lại toàn bộ trước khi lưu (gọi `validateForConfirm`):
+
+| Thứ tự | Hàm validate | Kiểm tra |
+|---|---|---|
+| 1 | Tồn tại nhân viên (Edit mode) | Bỏ qua (Add mode) |
+| 2 | `validateLoginId` | Đầy đủ như Giai đoạn 2 |
+| 3 | `validateDepartment` (dòng 201) | Bắt buộc, ID tồn tại trong DB (`ER002`, `ER004`) |
+| 4 | `validateEmployeeName` (dòng 223) | Bắt buộc, ≤125 ký tự (`ER001`, `ER006`) |
+| 5 | `validateEmployeeNameKana` (dòng 239) | Bắt buộc, ≤125, phải là Katakana half-width (`ER001`, `ER006`, `ER009`) |
+| 6 | `validateBirthDate` (dòng 257) | Bắt buộc, đúng định dạng `yyyy/MM/dd` (`ER001`, `ER005`) |
+| 7 | `validateEmail` (dòng 273) | Bắt buộc, ≤125, đúng cú pháp email (`ER001`, `ER006`, `ER005`) |
+| 8 | `validateTelephone` (dòng 291) | Bắt buộc, ≤50, chỉ ký tự half-width (`ER001`, `ER006`, `ER008`) |
+| 9 | `validatePassword` (dòng 309) | Bắt buộc (Add mode), 8–50 ký tự (`ER001`, `ER007`) |
+| 10 | `validateCertification` (dòng 325) | Nếu có chứng chỉ: kiểm tra tồn tại, ngày hợp lệ, end ≥ start, điểm dương ≤3 chữ số |
+
+### Service: `EmployeeServiceImpl.java` – `addEmployee` (dòng 154)
+
+- **`@Transactional`**: Đảm bảo toàn vẹn dữ liệu, rollback nếu có lỗi.
+- Mã hóa mật khẩu bằng `BCrypt` trước khi lưu.
+- Lưu nhân viên vào bảng `employees`.
+- Nếu có chứng chỉ: Lưu vào bảng `employees_certifications`.
 
 ---
 
 ## GIAI ĐOẠN 4: HOÀN TẤT (ADM006)
 
-1.  **Dọn dẹp**: *FE Dòng 135* gọi `clearEmployeeFormDataStorage()` xóa sạch dữ liệu tạm.
-2.  **Thông báo**: *FE Dòng 138* điều hướng về màn hình hoàn tất kèm thông báo thành công.
+1. **Dọn dẹp**: `clearEmployeeFormDataStorage()` xóa dữ liệu tạm khỏi `sessionStorage`.
+2. **Thông báo**: Điều hướng sang ADM006 kèm thông báo `MSG001` (thêm mới thành công).
+3. **Quay lại**: Người dùng nhấn "Quay lại danh sách" → Về ADM002.
 
 ---
-*Tài liệu quy trình Full-Stack được biên soạn bởi **tranledat** vào ngày 08/05/2026.*
+
+*Tài liệu quy trình Full-Stack – Cập nhật lần cuối bởi **tranledat** ngày 10/05/2026.*

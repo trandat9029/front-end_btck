@@ -72,13 +72,13 @@ const EmployeeDetailForm = () => {
           <div className="col-sm col-sm-10">{employee.employeeTelephone}</div>
         </li>
 
-        {/* Hiển thị danh sách chứng chỉ (nếu có) */}
-        {employee.certifications && employee.certifications.length > 0 && (
-          <>
-            <li className="title mt-12">
-              <a href="#!">日本語能力</a>
-            </li>
-            {employee.certifications.map((cert, index) => (
+        {/* Luôn hiển thị phần Nhật ngữ - nếu không có chứng chỉ thì để trống */}
+        <>
+          <li className="title mt-12">
+            <a href="#!">日本語能力</a>
+          </li>
+          {employee.certifications && employee.certifications.length > 0 ? (
+            employee.certifications.map((cert, index) => (
               <React.Fragment key={cert.certificationId || index}>
                 <li className="form-group row d-flex">
                   <label className="col-form-label col-sm-2">資格</label>
@@ -97,9 +97,29 @@ const EmployeeDetailForm = () => {
                   <div className="col-sm col-sm-10">{cert.score}</div>
                 </li>
               </React.Fragment>
-            ))}
-          </>
-        )}
+            ))
+          ) : (
+            // Nhân viên không có chứng chỉ: hiển thị các trường trống
+            <>
+              <li className="form-group row d-flex">
+                <label className="col-form-label col-sm-2">資格</label>
+                <div className="col-sm col-sm-10"></div>
+              </li>
+              <li className="form-group row d-flex">
+                <label className="col-form-label col-sm-2">資格交付日</label>
+                <div className="col-sm col-sm-10"></div>
+              </li>
+              <li className="form-group row d-flex">
+                <label className="col-form-label col-sm-2">失効日</label>
+                <div className="col-sm col-sm-10"></div>
+              </li>
+              <li className="form-group row d-flex">
+                <label className="col-form-label col-sm-2">点数</label>
+                <div className="col-sm col-sm-10"></div>
+              </li>
+            </>
+          )}
+        </>
 
         {/* Nhóm các nút điều hướng */}
         <li className="form-group row d-flex">
